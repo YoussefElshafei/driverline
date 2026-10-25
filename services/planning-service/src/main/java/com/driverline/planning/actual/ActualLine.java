@@ -49,6 +49,10 @@ public class ActualLine {
         this.amount = amount;
     }
 
+    public void changeAmount(BigDecimal newAmount) {
+        this.amount = newAmount;
+    }
+
     public Long getId() {
         return id;
     }

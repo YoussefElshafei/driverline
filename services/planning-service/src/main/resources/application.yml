@@ -11,6 +11,11 @@ spring:
     hibernate:
       # Flyway owns the schema; Hibernate only checks that entities match it.
       ddl-auto: validate
+  servlet:
+    multipart:
+      # Actuals files for a small company are tiny; reject anything unreasonably large early.
+      max-file-size: 5MB
+      max-request-size: 5MB
 
 server:
   port: ${PLANNING_SERVICE_PORT:8080}

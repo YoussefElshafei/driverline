@@ -4,7 +4,7 @@
 
 A budget vs. actual variance analysis and driver-based forecasting app for a small company's finance team.
 
-> **Status:** early development (Phase 1 of 6). The database schema and a seeded demo company exist; there is no user-facing feature yet. The features below are planned, and this README is updated as each one ships.
+> **Status:** in development (Phase 2 of 6). Budget entry and actuals import work today; variance reports, Excel export, forecasting and AI commentary are planned. This README is updated as each feature ships.
 
 ## Why this exists
 
@@ -22,11 +22,17 @@ On first start, the backend loads **Ace Janitorial Service**, a fictional commer
 
 The data is generated in code from a fixed random seed, so every run produces the same numbers. Set `SEED_DEMO_DATA=false` to start empty. See [docs/architecture.md](docs/architecture.md#demo-data).
 
-## Planned features
+## Features
 
-- Chart of accounts and departments
-- Monthly budget entry per account and department
-- Actuals import from CSV and Excel (.xlsx)
+**Working now**
+
+- **Chart of accounts and departments**, seeded for the demo company and available through the API
+- **Monthly budget entry:** an editable grid per fiscal year and department, with live row totals, inline validation, adding account rows, and all-or-nothing saves
+- **Actuals import from CSV and Excel (.xlsx):** every row is validated before anything is saved; a rejected file returns every problem with its row number, column and value. Re-importing a month replaces its amounts instead of duplicating them. Accepts `1,234.56`, `$1,234.56` and accounting-style `(1,234.56)`
+- **API documentation** generated with springdoc (Swagger UI)
+
+**Planned**
+
 - Budget vs. actual variance reports with favorable/unfavorable flags and drill-down
 - Excel export of reports
 - Driver-based forecasting with Base / Best / Worst scenarios
@@ -55,6 +61,9 @@ See [docs/architecture.md](docs/architecture.md) for details and [docs/adr/](doc
 | Backend | Java 21 + Spring Boot 4, Maven | Mature, widely used stack for business services |
 | Database | PostgreSQL + Flyway | Reliable relational database; versioned, repeatable schema migrations |
 | Backend tests | JUnit 5, Mockito, Testcontainers | Unit tests plus integration tests against a real PostgreSQL in Docker |
+| File import | Apache POI, Apache Commons CSV | POI reads .xlsx workbooks; Commons CSV handles quoting and edge cases a hand-written parser gets wrong |
+| API docs | springdoc-openapi | Generates OpenAPI/Swagger UI from the controllers, so docs can't drift from the code |
+| Routing | React Router | Standard client-side routing for the frontend pages |
 | Containers | Docker + Docker Compose | Same environment on every machine |
 | CI | GitHub Actions | Builds, tests and lints on every push and pull request |
 
@@ -81,6 +90,7 @@ cd services\planning-service
 ```
 
 Health check: <http://localhost:8080/actuator/health>
+API docs: <http://localhost:8080/swagger-ui.html> (summary in [docs/api.md](docs/api.md))
 
 On startup, Flyway creates the schema and the demo company is loaded into the empty database. To reset the database, run `docker compose down -v` (this deletes the data volume), then `docker compose up -d`.
 
@@ -92,7 +102,12 @@ npm install
 npm run dev
 ```
 
-Open <http://localhost:5173>.
+Open <http://localhost:5173>. The dev server forwards `/api` requests to the backend on port 8080.
+
+### Try it
+
+1. **Budget entry:** pick FY2026 and a department, change a few cells (changed cells turn yellow, invalid ones red), and save.
+2. **Import actuals:** upload [`samples/actuals-2026-10.csv`](samples/) or the `.xlsx` version to add October 2026, then upload `samples/actuals-with-errors.csv` to see row-level validation errors.
 
 ## Running tests
 
@@ -115,6 +130,7 @@ Frontend:
 ```powershell
 cd frontend
 npm run lint
+npm run format:check
 npm run typecheck
 npm test
 ```
@@ -126,6 +142,7 @@ npm test
 ├── .github/workflows/   CI pipeline
 ├── docs/                Architecture notes and decision records
 ├── frontend/            React + TypeScript app
+├── samples/             Example actuals files (valid CSV/XLSX and one with deliberate errors)
 ├── services/
 │   └── planning-service/  Spring Boot service
 ├── docker-compose.yml   Local PostgreSQL
