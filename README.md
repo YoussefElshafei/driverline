@@ -1,6 +1,6 @@
 # DriverLine
 
-[![CI](https://github.com/YoussefElshafei/driverline/actions/workflows/ci.yml/badge.svg)](https://github.com/GITHUB_USERNAME/driverline/actions/workflows/ci.yml)
+[![CI](https://github.com/YoussefElshafei/driverline/actions/workflows/ci.yml/badge.svg)](https://github.com/YoussefElshafei/driverline/actions/workflows/ci.yml)
 
 A budget vs. actual variance analysis and driver-based forecasting app for a small company's finance team.
 
