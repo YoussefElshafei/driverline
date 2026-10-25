@@ -143,7 +143,9 @@ export function DriverEditor({ grid, onSaved }: DriverEditorProps) {
                 >
                   <th scope="row">
                     {line.accountCode} {line.accountName}
-                    <span className="hint"> · {line.departmentName}</span>
+                    <span className="line-department">
+                      {line.departmentName}
+                    </span>
                   </th>
                   <td>
                     <select

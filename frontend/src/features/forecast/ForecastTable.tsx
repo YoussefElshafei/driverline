@@ -5,7 +5,7 @@ import type {
   OutlookLine,
 } from '../../api/types'
 import { formatPercent, formatSignedMoney } from '../../lib/format'
-import { formatMoney } from '../../lib/money'
+import { formatMoney, formatWholeDollars } from '../../lib/money'
 import { MONTH_SHORT } from '../../lib/months'
 import { FavorabilityBadge } from '../variance/FavorabilityBadge'
 
@@ -21,8 +21,10 @@ function OutlookCells({ line }: { line: OutlookLine }) {
       <td className="num">{formatMoney(line.outlook)}</td>
       <td className="num">{formatMoney(line.budget)}</td>
       <td className="num">
-        {formatSignedMoney(line.variance)} (
-        {formatPercent(line.variancePercent)})
+        {formatSignedMoney(line.variance)}
+        <span className="cell-subline">
+          {formatPercent(line.variancePercent)}
+        </span>
       </td>
       <td>
         <FavorabilityBadge favorability={line.favorability} />
@@ -31,14 +33,19 @@ function OutlookCells({ line }: { line: OutlookLine }) {
   )
 }
 
-/** Twelve months per line (forecast months shaded), then full-year outlook against budget. */
+/**
+ * Twelve months per line (forecast months shaded, whole dollars to fit the screen), then the full-year outlook
+ * against budget with exact cents.
+ */
 export function ForecastTable({ report }: { report: ForecastReport }) {
   return (
     <div className="table-scroll">
       <table className="report forecast-table">
         <thead>
           <tr>
-            <th scope="col">Department / account</th>
+            <th scope="col" className="sticky-col">
+              Department / account
+            </th>
             {MONTH_SHORT.map((month, index) => {
               const forecast = index + 1 > report.latestActualMonth
               return (
@@ -68,7 +75,7 @@ export function ForecastTable({ report }: { report: ForecastReport }) {
           {report.departments.map((department) => (
             <Fragment key={department.departmentCode}>
               <tr className="row-department">
-                <th scope="row" colSpan={13}>
+                <th scope="row" colSpan={13} className="sticky-col">
                   {department.departmentName}
                   <span className="hint"> · net contribution</span>
                 </th>
@@ -76,7 +83,7 @@ export function ForecastTable({ report }: { report: ForecastReport }) {
               </tr>
               {department.lines.map((line) => (
                 <tr key={line.accountCode} className="row-account">
-                  <th scope="row">
+                  <th scope="row" className="sticky-col">
                     {line.accountCode} {line.accountName}
                     <span className="method-tag">
                       {METHOD_LABELS[line.method]}
@@ -88,7 +95,7 @@ export function ForecastTable({ report }: { report: ForecastReport }) {
                       className={`num${month.actual ? '' : ' cell-forecast'}`}
                       data-testid={`${department.departmentCode}-${line.accountCode}-${month.month}`}
                     >
-                      {formatMoney(month.amount)}
+                      {formatWholeDollars(month.amount)}
                     </td>
                   ))}
                   <OutlookCells line={line.outlook} />

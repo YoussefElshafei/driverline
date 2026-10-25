@@ -498,3 +498,50 @@ a.button {
   margin-top: 0.75rem;
   font-size: 0.8rem;
 }
+
+/* ---- Fitting the forecast and driver tables on a laptop screen ---- */
+
+.forecast-table {
+  font-size: 0.8rem;
+}
+
+.forecast-table .method-tag {
+  display: block;
+  width: fit-content;
+  margin: 0.1rem 0 0;
+}
+
+.cell-subline {
+  display: block;
+  color: var(--muted);
+  font-size: 0.75rem;
+}
+
+.forecast-table .sticky-col,
+.drivers-table th[scope='row'] {
+  min-width: 13rem;
+  white-space: normal;
+}
+
+.line-department {
+  display: block;
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+
+.drivers-table td {
+  white-space: normal;
+}
+
+.driver-input {
+  width: 5.5rem;
+}
+
+.driver-input-narrow {
+  width: 3rem;
+}
+
+.driver-cell .preview {
+  display: block;
+  margin: 0.15rem 0 0;
+}

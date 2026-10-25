@@ -76,6 +76,22 @@ export function sumAmounts(amounts: ReadonlyArray<string | null>): string {
   return fromCents(totalCents)
 }
 
+/**
+ * "156081.46" -> "$156,081" (rounded half-up on the magnitude, in integer cents). For dense tables where cents
+ * add noise; totals beside them still show exact cents.
+ */
+export function formatWholeDollars(amount: string): string {
+  const cents = toCents(amount)
+  const dollars = Math.floor((Math.abs(cents) + 50) / 100)
+  const sign = cents < 0 && dollars > 0 ? '-' : ''
+  return `${sign}$${String(dollars).replace(/\B(?=(\d{3})+(?!\d))/g, ',')}`
+}
+
+/** "154812" -> "154,812.00": an editable amount with separators but no "$" (parseMoney reads it back). */
+export function formatAmount(amount: string): string {
+  return formatMoney(amount).replace('$', '')
+}
+
 /** "1234567.5" -> "$1,234,567.50"; "-12.00" -> "-$12.00". String-based, so no rounding can creep in. */
 export function formatMoney(amount: string): string {
   const canonical = fromCents(toCents(amount))

@@ -1,6 +1,6 @@
 # Architecture
 
-> Status: Phase 5. Data model, demo data, budget entry, actuals import (CSV/XLSX), variance reports with drill-down, Excel export, driver-based forecasting with Base/Best/Worst scenarios, and AI variance commentary exist. Running every service in Docker Compose is Phase 6.
+> Status: MVP complete (Phases 0–6). Everything described here is built, tested, and runs with `docker compose up --build`. The optional Azure deployment and Excel add-in phases are not built.
 
 ## Services
 
@@ -266,6 +266,39 @@ sequenceDiagram
 
 See [ADR 0015](adr/0015-llm-behind-an-interface-with-fallback-and-guard.md) and [ADR 0016](adr/0016-planning-orchestrates-stateless-commentary-service.md).
 
+## Deployment (Docker Compose)
+
+`docker compose up --build` runs the whole stack ([ADR 0017](adr/0017-docker-compose-nginx-and-host-ollama.md)):
+
+```mermaid
+flowchart LR
+    browser[Browser] -->|localhost:8088| nginx
+    subgraph compose[Docker Compose network]
+        nginx[frontend<br/>nginx: React build + /api proxy]
+        planning[planning-service :8080]
+        commentary[commentary-service :8082]
+        postgres[(postgres :5432)]
+        nginx -->|/api, /swagger-ui, /v3/api-docs| planning
+        planning -->|jdbc:postgresql://postgres:5432| postgres
+        planning -->|http://commentary-service:8082| commentary
+    end
+    commentary -->|host.docker.internal:11434| ollama[Ollama on the host<br/>GPU, optional]
+    devtools[Local development tools] -->|localhost:5434| postgres
+```
+
+| Container | Image | Published port | Health check | Starts after |
+| --- | --- | --- | --- | --- |
+| postgres | `postgres:17-alpine` | 5434 (for local development) | `pg_isready` | — |
+| planning-service | built from `services/planning-service` (JRE 21, non-root) | none | `GET /actuator/health` (includes the database) | postgres healthy |
+| commentary-service | built from `services/commentary-service` (JRE 21, non-root) | none | `GET /actuator/health` | — |
+| frontend | built from `frontend` (Node build, nginx runtime) | **8088** | `GET /` | both services healthy |
+
+Inside the network, services address each other by name (`postgres`, `commentary-service`), so compose sets `DB_URL` and `COMMENTARY_SERVICE_URL` explicitly rather than using the local-development values in `.env`. The database volume (`postgres-data`) persists between runs; `docker compose down -v` deletes it and the demo company is reseeded on the next start.
+
+CI starts this same stack on every push and runs [`scripts/smoke-test.sh`](../scripts/smoke-test.sh) through nginx.
+
 ## Health checks
 
-`planning-service` exposes `GET /actuator/health`. It reports `UP` only when the service can reach the database.
+- `planning-service`: `GET /actuator/health` reports `UP` only when the service can reach the database.
+- `commentary-service`: `GET /actuator/health` reports `UP` when the service is running. It deliberately doesn't depend on Ollama, because the service still works (rule-based) without it.
+- `frontend`: nginx answers `GET /`.

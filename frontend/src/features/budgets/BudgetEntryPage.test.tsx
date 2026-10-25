@@ -71,7 +71,7 @@ describe('BudgetEntryPage', () => {
       await screen.findByLabelText(
         'Marketing, Sales & Account Management, Jan',
       ),
-    ).toHaveValue('5040.00')
+    ).toHaveValue('5,040.00')
     expect(screen.getByTestId('total-SALES-6100')).toHaveTextContent(
       '$13,230.00',
     )

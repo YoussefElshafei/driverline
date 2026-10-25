@@ -1,4 +1,9 @@
-# Phase 0: database only. Application services are added to this file in Phase 6.
+# The whole DriverLine stack. Start it with:   docker compose up --build
+# Then open http://localhost:8088
+#
+# For local development without Docker, start only the database:   docker compose up -d postgres
+#
+# AI commentary uses Ollama running on your machine (not in Docker). Without it, commentary is rule-based.
 services:
   postgres:
     image: postgres:17-alpine
@@ -16,6 +21,58 @@ services:
       interval: 5s
       timeout: 5s
       retries: 10
+
+  planning-service:
+    build: services/planning-service
+    environment:
+      # Inside the Docker network the database is "postgres:5432", not localhost:5434.
+      DB_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB:-driverline}
+      DB_USERNAME: ${POSTGRES_USER:-driverline}
+      DB_PASSWORD: ${POSTGRES_PASSWORD:-driverline}
+      COMMENTARY_SERVICE_URL: http://commentary-service:8082
+      SEED_DEMO_DATA: ${SEED_DEMO_DATA:-true}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:8080/actuator/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 40s
+
+  commentary-service:
+    build: services/commentary-service
+    environment:
+      COMMENTARY_LLM_PROVIDER: ${COMMENTARY_LLM_PROVIDER:-ollama}
+      # Ollama runs on the host machine; host.docker.internal is how a container reaches it.
+      OLLAMA_BASE_URL: ${OLLAMA_URL_FROM_DOCKER:-http://host.docker.internal:11434}
+      OLLAMA_MODEL: ${OLLAMA_MODEL:-llama3.1:8b}
+      OLLAMA_TIMEOUT_SECONDS: ${OLLAMA_TIMEOUT_SECONDS:-120}
+    extra_hosts:
+      # Docker Desktop defines host.docker.internal already; this makes it work on Linux (e.g. CI) too.
+      - "host.docker.internal:host-gateway"
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:8082/actuator/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 30s
+
+  frontend:
+    build: frontend
+    ports:
+      - "${FRONTEND_PORT:-8088}:80"
+    depends_on:
+      planning-service:
+        condition: service_healthy
+      commentary-service:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost/"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
 
 volumes:
   postgres-data:

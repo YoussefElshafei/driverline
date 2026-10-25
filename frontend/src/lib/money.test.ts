@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import {
+  formatAmount,
   formatMoney,
+  formatWholeDollars,
   fromCents,
   parseMoney,
   sumAmounts,
@@ -68,5 +70,28 @@ describe('formatMoney', () => {
     ['999.99', '$999.99'],
   ])('formats %j as %j', (input, expected) => {
     expect(formatMoney(input)).toBe(expected)
+  })
+})
+
+describe('formatWholeDollars', () => {
+  it.each([
+    ['156081.46', '$156,081'],
+    ['156081.50', '$156,082'],
+    ['-14453.61', '-$14,454'],
+    ['0.49', '$0'],
+    ['-0.40', '$0'],
+  ])('formats %j as %j', (input, expected) => {
+    expect(formatWholeDollars(input)).toBe(expected)
+  })
+})
+
+describe('formatAmount', () => {
+  it('adds separators without a currency sign so the value stays editable', () => {
+    expect(formatAmount('154812')).toBe('154,812.00')
+    expect(formatAmount('-12.5')).toBe('-12.50')
+    expect(parseMoney(formatAmount('154812'))).toEqual({
+      ok: true,
+      amount: '154812.00',
+    })
   })
 })

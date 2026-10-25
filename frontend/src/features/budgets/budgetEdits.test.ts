@@ -27,7 +27,7 @@ describe('budget edits', () => {
     const marketing = row(['4800.00'])
     const edits = applyEdit({}, marketing, 0, '5,000')
 
-    expect(displayValue(marketing, 0, {})).toBe('4800.00')
+    expect(displayValue(marketing, 0, {})).toBe('4,800.00')
     expect(displayValue(marketing, 0, edits)).toBe('5,000')
     expect(displayValue(marketing, 1, edits)).toBe('')
   })

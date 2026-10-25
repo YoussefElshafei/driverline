@@ -197,7 +197,7 @@ describe('ForecastPage', () => {
     ).toHaveAttribute('aria-pressed', 'true')
 
     const october = await screen.findByTestId('SALES-4000-10')
-    expect(october).toHaveTextContent('$291,400.00')
+    expect(october).toHaveTextContent('$291,400')
     expect(october).toHaveClass('cell-forecast')
     expect(screen.getByTestId('SALES-4000-9')).not.toHaveClass('cell-forecast')
     expect(
@@ -216,7 +216,7 @@ describe('ForecastPage', () => {
     expect(
       await screen.findByRole('heading', { name: 'Best scenario' }),
     ).toBeInTheDocument()
-    expect(screen.getByTestId('SALES-4000-10')).toHaveTextContent('$302,400.00')
+    expect(screen.getByTestId('SALES-4000-10')).toHaveTextContent('$302,400')
     expect(
       screen.getByRole('link', { name: 'Export to Excel' }),
     ).toHaveAttribute('href', '/api/forecast/export?year=2026&scenario=BEST')

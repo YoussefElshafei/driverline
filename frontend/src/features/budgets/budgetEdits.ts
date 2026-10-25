@@ -1,5 +1,5 @@
 import type { BudgetEntry, BudgetGridRow } from '../../api/types'
-import { parseMoney, sumAmounts, toCents } from '../../lib/money'
+import { formatAmount, parseMoney, sumAmounts, toCents } from '../../lib/money'
 import { MONTH_SHORT } from '../../lib/months'
 
 /** What the user has typed, keyed by cell. Cells the user hasn't touched are absent. */
@@ -12,13 +12,17 @@ export function cellKey(row: BudgetGridRow, monthIndex: number): string {
   return `${row.departmentCode}|${row.accountCode}|${monthIndex}`
 }
 
-/** The text to show in a cell: the user's edit if there is one, otherwise the saved amount. */
+/** The text to show in a cell: the user's edit if there is one, otherwise the saved amount with separators. */
 export function displayValue(
   row: BudgetGridRow,
   monthIndex: number,
   edits: CellEdits,
 ): string {
-  return edits[cellKey(row, monthIndex)] ?? row.months[monthIndex] ?? ''
+  const saved = row.months[monthIndex]
+  return (
+    edits[cellKey(row, monthIndex)] ??
+    (saved === null ? '' : formatAmount(saved))
+  )
 }
 
 /** Records an edit, or forgets it when the user types the original value back. */

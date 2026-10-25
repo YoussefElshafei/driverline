@@ -7,6 +7,8 @@ Interactive documentation is generated from the code by springdoc. With the serv
 - planning-service Swagger UI: <http://localhost:8080/swagger-ui.html> (OpenAPI JSON: `/v3/api-docs`)
 - commentary-service Swagger UI: <http://localhost:8082/swagger-ui.html> (OpenAPI JSON: `/v3/api-docs`)
 
+With `docker compose up`, planning-service's API is served through nginx at <http://localhost:8088/api/...> (Swagger UI at <http://localhost:8088/swagger-ui.html>); commentary-service is only reachable inside the Docker network.
+
 This page summarises the endpoints and the conventions that apply to all of them.
 
 # planning-service
