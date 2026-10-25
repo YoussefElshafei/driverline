@@ -22,6 +22,10 @@ describe('App', () => {
       'href',
       '/variance',
     )
+    expect(screen.getByRole('link', { name: 'Forecast' })).toHaveAttribute(
+      'href',
+      '/forecast',
+    )
     expect(screen.getByRole('link', { name: 'Budget entry' })).toHaveAttribute(
       'href',
       '/budgets',

@@ -1,10 +1,10 @@
 package com.driverline.planning.variance;
 
+import com.driverline.planning.common.excel.ExcelFile;
 import com.driverline.planning.variance.dto.AccountVarianceReport;
 import com.driverline.planning.variance.dto.DepartmentVarianceReport;
 import com.driverline.planning.variance.dto.MonthlyVarianceReport;
 import com.driverline.planning.variance.export.VarianceExportService;
-import com.driverline.planning.variance.export.VarianceExportService.ExcelFile;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.constraints.Max;

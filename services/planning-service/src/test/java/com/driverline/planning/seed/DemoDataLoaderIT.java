@@ -8,6 +8,7 @@ import com.driverline.planning.actual.ActualLineRepository;
 import com.driverline.planning.budget.BudgetLine;
 import com.driverline.planning.budget.BudgetLineRepository;
 import com.driverline.planning.department.DepartmentRepository;
+import com.driverline.planning.forecast.ForecastLineRepository;
 import com.driverline.planning.period.FiscalPeriod;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -65,6 +66,16 @@ class DemoDataLoaderIT {
 
         assertThat(januaryContractRevenue.getAmount()).isEqualByComparingTo("287100.00");
         assertThat(januaryContractRevenue.getDepartment().getCode()).isEqualTo(AceJanitorialProfile.SALES);
+    }
+
+    @Test
+    void startupAlsoLoadsTheFy2026ForecastDriversOnce(@Autowired ForecastLineRepository forecastLineRepository,
+            @Autowired DemoForecastLoader forecastLoader) {
+        assertThat(forecastLineRepository.countByFiscalYear(AceJanitorialForecastDrivers.YEAR))
+                .isEqualTo(AceJanitorialForecastDrivers.drivers().size());
+
+        assertThat(forecastLoader.loadIfMissing(AceJanitorialForecastDrivers.YEAR, AceJanitorialForecastDrivers.drivers()))
+                .isFalse();
     }
 
     @Test

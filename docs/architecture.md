@@ -1,13 +1,13 @@
 # Architecture
 
-> Status: Phase 3. Data model, demo data, budget entry, actuals import (CSV/XLSX), variance reports with drill-down, and Excel export exist. Forecasting and AI commentary are not built yet.
+> Status: Phase 4. Data model, demo data, budget entry, actuals import (CSV/XLSX), variance reports with drill-down, Excel export, and driver-based forecasting with Base/Best/Worst scenarios exist. AI commentary is not built yet.
 
 ## Services
 
 | Component | Status | Responsibility |
 | --- | --- | --- |
-| `frontend` | Variance reports, budget entry and actuals import pages | React + TypeScript UI, served by nginx in Docker |
-| `planning-service` | Reference data, budgets, actuals import, variance reports and Excel export built | Accounts, departments, budgets, actuals, variances, forecasts, scenarios, Excel import/export |
+| `frontend` | Variance, forecast, budget entry and actuals import pages | React + TypeScript UI, served by nginx in Docker |
+| `planning-service` | Reference data, budgets, actuals import, variance reports, forecasting and Excel export built | Accounts, departments, budgets, actuals, variances, forecasts, scenarios, Excel import/export |
 | `commentary-service` | Planned (Phase 5) | Generates plain-English variance commentary through a swappable LLM interface with a rule-based fallback |
 | PostgreSQL | Running via Docker Compose | Stores all planning data; schema managed by Flyway |
 
@@ -26,6 +26,10 @@ erDiagram
     ACCOUNT ||--o{ ACTUAL_LINE : "is recorded in"
     DEPARTMENT ||--o{ BUDGET_LINE : owns
     DEPARTMENT ||--o{ ACTUAL_LINE : owns
+    ACCOUNT ||--o{ FORECAST_LINE : "is forecast by"
+    DEPARTMENT ||--o{ FORECAST_LINE : owns
+    FORECAST_LINE ||--o{ FORECAST_DRIVER_VALUE : "has values per"
+    SCENARIO ||--o{ FORECAST_DRIVER_VALUE : "applies to"
 
     ACCOUNT {
         bigint id PK
@@ -54,7 +58,32 @@ erDiagram
         int fiscal_month "1-12"
         numeric amount "NUMERIC(15,2)"
     }
+    SCENARIO {
+        bigint id PK
+        varchar code UK "BASE, BEST, WORST"
+        varchar name
+        int sort_order
+    }
+    FORECAST_LINE {
+        bigint id PK
+        int fiscal_year
+        bigint account_id FK
+        bigint department_id FK
+        varchar method "UNITS_X_RATE, PERCENT_OF_REVENUE, BUDGET"
+        varchar quantity_label
+        varchar rate_label
+    }
+    FORECAST_DRIVER_VALUE {
+        bigint id PK
+        bigint forecast_line_id FK
+        bigint scenario_id FK
+        numeric quantity "NUMERIC(12,2)"
+        numeric rate "NUMERIC(15,2)"
+        numeric percent "NUMERIC(7,4)"
+    }
 ```
+
+Forecast tables (Phase 4, [ADR 0013](adr/0013-driver-based-forecast-model.md), [ADR 0014](adr/0014-scenarios-as-driver-value-sets.md)): one `forecast_line` per account × department × year holds the method; `forecast_driver_value` holds the values for each scenario. Lines without a `forecast_line` are forecast at their budget.
 
 Key rules (see [ADR 0005](adr/0005-monthly-budget-and-actual-data-model.md)):
 
@@ -80,6 +109,10 @@ com.driverline.planning
 │   ├── report     PlanningFact loading, ReportPeriod, VarianceReportBuilder (pure aggregation)
 │   ├── dto        Report shapes returned by the API
 │   └── export     ExcelReport layout, mapper and POI workbook writer
+├── forecast     Scenario, ForecastLine, ForecastDriverValue entities; ForecastService, controller, validator
+│   ├── engine     ForecastInputAssembler and ForecastEngine (pure: actuals + drivers -> 12 months per line)
+│   ├── dto        Forecast report, scenario comparison and driver grid shapes
+│   └── export     Forecast workbook writer (monthly columns + scenario sheet)
 ├── period       FiscalPeriod value object (year + month)
 ├── common       LineKey, MoneyParser, money-as-string JSON config, global error handler, OpenAPI config
 └── seed         Demo company profile, data generator, loader
@@ -93,6 +126,7 @@ frontend/src
 ├── lib           money.ts: parsing, cents arithmetic, formatting
 └── features
     ├── variance  Variance page: department (drill-down), account and monthly views, summary cards
+    ├── forecast  Forecast page: scenario cards, 12-month table, driver editor
     ├── budgets   Budget entry page, grid, edit-tracking logic
     └── actuals   Import page and error table
 ```
@@ -105,7 +139,7 @@ On startup, if the database is empty, `planning-service` loads **Ace Janitorial 
 - FY2025: full budget and 12 months of actuals
 - FY2026: full budget and actuals for January–September
 
-Budgets follow seasonal patterns (e.g. specialty cleaning peaks in spring and August). Actuals add small random noise from a fixed seed, plus a few business events that produce visible variances, such as a 2026 fuel price spike and a contract lost in July 2026. Set `SEED_DEMO_DATA=false` to start with an empty database.
+Budgets follow seasonal patterns (e.g. specialty cleaning peaks in spring and August). Actuals add small random noise from a fixed seed, plus a few business events that produce visible variances, such as a 2026 fuel price spike and a contract lost in July 2026. It also loads FY2026 forecast drivers (Base/Best/Worst) for nine lines if the year has none yet, so databases seeded before Phase 4 receive them too. Set `SEED_DEMO_DATA=false` to start with an empty database.
 
 ## Request flow
 
@@ -173,6 +207,22 @@ flowchart LR
 ```
 
 Department totals are **net contribution** (revenue − expenses), so departments add up to company net income and each department's accounts add up to its total ([ADR 0011](adr/0011-net-contribution-and-closed-months.md)).
+
+### Forecast
+
+```mermaid
+flowchart LR
+    req[GET /api/forecast?year&scenario] --> svc[ForecastService]
+    svc --> facts[PlanningFactLoader<br/>budgets + actuals]
+    svc --> cfg[ForecastLineRepository<br/>methods + driver values]
+    facts --> asm[ForecastInputAssembler<br/>one input per line, scenario's drivers]
+    cfg --> asm
+    asm --> eng[ForecastEngine<br/>closed months: actuals<br/>open months: units x rate, budget,<br/>then % of revenue]
+    eng --> rep[ForecastReportBuilder<br/>outlook vs budget, VarianceCalculator]
+    rep --> json[JSON report]
+```
+
+Forecasts are calculated on every request from the stored drivers, so a driver edit or a new month of actuals shows up immediately. `GET /api/forecast/compare` runs the engine once per scenario.
 
 ## Health checks
 

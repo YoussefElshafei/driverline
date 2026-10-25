@@ -5,10 +5,14 @@ import type {
   BudgetGrid,
   Department,
   DepartmentVarianceReport,
+  DriverGrid,
+  DriverLineRequest,
+  ForecastReport,
   ImportSummary,
   MonthlyVarianceReport,
   ProblemDetail,
   SaveBudgetResult,
+  ScenarioComparison,
 } from './types'
 
 /** Thrown for any non-2xx response. Carries the server's problem details when it sent them. */
@@ -124,3 +128,23 @@ export const varianceExportUrl = {
   byMonth: (query: MonthlyQuery) =>
     `/api/variance/by-month/export?${queryString(query)}`,
 }
+
+export const forecastApi = {
+  report: (year: number, scenario: string) =>
+    request<ForecastReport>(`/api/forecast?${queryString({ year, scenario })}`),
+  compare: (year: number) =>
+    request<ScenarioComparison>(
+      `/api/forecast/compare?${queryString({ year })}`,
+    ),
+  drivers: (year: number) =>
+    request<DriverGrid>(`/api/forecast/drivers?${queryString({ year })}`),
+  saveDrivers: (year: number, lines: DriverLineRequest[]) =>
+    request<{ year: number; linesSaved: number }>('/api/forecast/drivers', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ year, lines }),
+    }),
+}
+
+export const forecastExportUrl = (year: number, scenario: string) =>
+  `/api/forecast/export?${queryString({ year, scenario })}`

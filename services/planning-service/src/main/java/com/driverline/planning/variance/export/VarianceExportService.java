@@ -1,14 +1,12 @@
 package com.driverline.planning.variance.export;
 
+import com.driverline.planning.common.excel.ExcelFile;
 import com.driverline.planning.variance.VarianceService;
 import org.springframework.stereotype.Service;
 
 /** Builds a report with {@link VarianceService}, lays it out, and renders it as an .xlsx file. */
 @Service
 public class VarianceExportService {
-
-    public record ExcelFile(String fileName, byte[] content) {
-    }
 
     private final VarianceService varianceService;
     private final VarianceExcelMapper mapper;

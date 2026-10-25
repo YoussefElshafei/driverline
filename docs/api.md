@@ -27,6 +27,12 @@ This page summarises the endpoints and the conventions that apply to all of them
 | GET | `/api/variance/by-account?year=2026[&fromMonth&toMonth]` | P&L layout: revenue and expense accounts combined across departments |
 | GET | `/api/variance/by-month?year=2026[&department=FLEET][&account=5300]` | 12-month trend for net income, a department's net contribution, or one account |
 | GET | `/api/variance/{by-department,by-account,by-month}/export?...` | The same report as a formatted `.xlsx` workbook |
+| GET | `/api/forecast?year=2026[&scenario=BASE]` | Full-year outlook for a scenario: 12 months per line, each marked actual or forecast, grouped by department |
+| GET | `/api/forecast/compare?year=2026` | Base, Best and Worst outlooks side by side |
+| GET | `/api/forecast/scenarios` | The scenarios |
+| GET | `/api/forecast/drivers?year=2026` | Every forecastable line with its method, labels and values per scenario |
+| PUT | `/api/forecast/drivers` | Create or update methods and driver values. All-or-nothing |
+| GET | `/api/forecast/export?year=2026[&scenario=BASE]` | Forecast workbook (monthly columns, forecast months shaded) plus a scenario comparison sheet |
 | GET | `/actuator/health` | `UP` when the service can reach the database |
 
 ### Variance reports
@@ -63,6 +69,36 @@ Every report line has this shape (real demo data: Vehicle & Fuel, FY2026 January
 In `by-month`, each of the 12 months has `budget`, `closed` and `variance` (`null` for months without actuals), plus `closedMonthsTotal`.
 
 **Excel exports** ([ADR 0012](adr/0012-excel-export-with-live-formulas.md)) return `application/vnd.openxmlformats-officedocument.spreadsheetml.sheet` with a descriptive file name such as `variance-by-department-FY2026-Jan-Sep.xlsx`. Variance columns are live Excel formulas; account rows are grouped under their department.
+
+### Forecast
+
+Rules ([ADR 0013](adr/0013-driver-based-forecast-model.md), [ADR 0014](adr/0014-scenarios-as-driver-value-sets.md)):
+
+- Full-year outlook = actuals for closed months + forecast for open months. Each month in `months` has `amount` and `actual` (`true` = recorded actual, `false` = forecast).
+- Methods: `UNITS_X_RATE` (quantity × rate), `PERCENT_OF_REVENUE` (percent of that month's total forecast revenue; expense lines only), `BUDGET` (the month's budget; the default).
+- `outlook` lines compare the full-year budget with the outlook using the variance rules: `{ "budget", "outlook", "variance", "variancePercent", "favorability" }`.
+
+Save drivers (values are required for every scenario unless the method is `BUDGET`):
+
+```http
+PUT /api/forecast/drivers
+Content-Type: application/json
+
+{
+  "year": 2026,
+  "lines": [{
+    "accountCode": "5300", "departmentCode": "FLEET", "method": "UNITS_X_RATE",
+    "quantityLabel": "Vans", "rateLabel": "Monthly cost per van",
+    "values": {
+      "BASE":  { "quantity": "14", "rate": "1250.00" },
+      "BEST":  { "quantity": "14", "rate": "1150.00" },
+      "WORST": { "quantity": "14", "rate": "1350.00" }
+    }
+  }]
+}
+```
+
+Errors point at the exact input, e.g. `lines[0].values.BEST.rate: is required for units × rate` or `lines[0].method: A revenue line can't be a percentage of revenue`.
 
 ### Save budget
 

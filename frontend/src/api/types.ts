@@ -144,3 +144,106 @@ export interface MonthlyVarianceReport {
   months: MonthlyVarianceRow[]
   closedMonthsTotal: VarianceLine
 }
+
+export type ForecastMethod = 'UNITS_X_RATE' | 'PERCENT_OF_REVENUE' | 'BUDGET'
+
+/** Full-year budget vs. outlook (actuals so far + forecast for the remaining months). */
+export interface OutlookLine {
+  budget: string
+  outlook: string
+  variance: string
+  variancePercent: string | null
+  favorability: Favorability
+}
+
+export interface ForecastSummary {
+  revenue: OutlookLine
+  expenses: OutlookLine
+  netIncome: OutlookLine
+}
+
+export interface MonthAmount {
+  month: number
+  amount: string
+  /** true for a recorded actual, false for a forecast */
+  actual: boolean
+}
+
+export interface ForecastLineRow {
+  accountCode: string
+  accountName: string
+  accountType: AccountType
+  method: ForecastMethod
+  months: MonthAmount[]
+  outlook: OutlookLine
+}
+
+export interface ForecastDepartment {
+  departmentCode: string
+  departmentName: string
+  netContribution: OutlookLine
+  lines: ForecastLineRow[]
+}
+
+export interface ForecastReport {
+  year: number
+  scenarioCode: string
+  scenarioName: string
+  latestActualMonth: number
+  summary: ForecastSummary
+  departments: ForecastDepartment[]
+}
+
+export interface Scenario {
+  code: string
+  name: string
+  description: string
+}
+
+export interface ScenarioComparison {
+  year: number
+  latestActualMonth: number
+  scenarios: {
+    scenarioCode: string
+    scenarioName: string
+    summary: ForecastSummary
+  }[]
+}
+
+export interface DriverValues {
+  quantity: string | null
+  rate: string | null
+  percent: string | null
+}
+
+export interface DriverLine {
+  accountCode: string
+  accountName: string
+  accountType: AccountType
+  departmentCode: string
+  departmentName: string
+  method: ForecastMethod
+  quantityLabel: string | null
+  rateLabel: string | null
+  /** false when the line has no forecast configuration yet and uses its budget */
+  configured: boolean
+  /** Keyed by scenario code */
+  values: Record<string, DriverValues>
+  averageOpenMonthBudget: string | null
+}
+
+export interface DriverGrid {
+  year: number
+  latestActualMonth: number
+  scenarios: Scenario[]
+  lines: DriverLine[]
+}
+
+export interface DriverLineRequest {
+  accountCode: string
+  departmentCode: string
+  method: ForecastMethod
+  quantityLabel: string | null
+  rateLabel: string | null
+  values: Record<string, DriverValues>
+}

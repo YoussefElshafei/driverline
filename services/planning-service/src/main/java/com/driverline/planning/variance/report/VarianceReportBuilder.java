@@ -67,7 +67,7 @@ public class VarianceReportBuilder {
      */
     public MonthlyTrend byMonth(List<PlanningFact> facts, String departmentFilter, String accountFilter,
             VarianceDirection direction) {
-        Set<Integer> closedMonths = closedMonths(facts);
+        Set<Integer> closedMonths = PlanningFact.closedMonths(facts);
         List<PlanningFact> scoped = facts.stream()
                 .filter(fact -> departmentFilter == null || fact.departmentCode().equals(departmentFilter))
                 .filter(fact -> accountFilter == null || fact.accountCode().equals(accountFilter))
@@ -97,11 +97,7 @@ public class VarianceReportBuilder {
     }
 
     public int latestActualMonth(List<PlanningFact> facts) {
-        return closedMonths(facts).stream().max(Integer::compare).orElse(0);
-    }
-
-    private static Set<Integer> closedMonths(List<PlanningFact> facts) {
-        return facts.stream().filter(PlanningFact::hasActual).map(PlanningFact::month).collect(Collectors.toSet());
+        return PlanningFact.closedMonths(facts).stream().max(Integer::compare).orElse(0);
     }
 
     private static List<PlanningFact> inPeriod(List<PlanningFact> facts, ReportPeriod period) {

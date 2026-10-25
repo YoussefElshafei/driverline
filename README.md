@@ -4,7 +4,7 @@
 
 A budget vs. actual variance analysis and driver-based forecasting app for a small company's finance team.
 
-> **Status:** in development (Phase 3 of 6). Budget entry, actuals import, variance reports with drill-down, and Excel export work today; driver-based forecasting and AI commentary are planned. This README is updated as each feature ships.
+> **Status:** in development (Phase 4 of 6). Budget entry, actuals import, variance reports with drill-down, Excel export, and driver-based forecasting with scenarios work today; AI commentary is planned. This README is updated as each feature ships.
 
 ## Why this exists
 
@@ -33,11 +33,12 @@ The data is generated in code from a fixed random seed, so every run produces th
 - **Drill-down** from department totals (net contribution) to individual accounts, and from any account to its monthly trend
 - **Period selection** that defaults to the months with actuals and warns when a range goes past them
 - **Excel export** of every report: live variance formulas, expandable department groups, accounting formats, colour-coded status, print-ready layout
+- **Driver-based forecasting:** the full-year outlook combines actuals for closed months with a forecast for the rest of the year, driven by business quantities: units × rate (e.g. active contracts × average contract value, cleaners × monthly cost), percent of revenue (e.g. supplies), or budget for fixed costs
+- **Base / Best / Worst scenarios:** separate driver values per scenario, edited side by side with a live preview, compared on one screen and exported to Excel (monthly columns with forecast months shaded, `SUM` formulas, and a scenario comparison sheet)
 - **API documentation** generated with springdoc (Swagger UI)
 
 **Planned**
 
-- Driver-based forecasting with Base / Best / Worst scenarios
 - Plain-English variance commentary from a local LLM, with a rule-based fallback
 
 ## Architecture
@@ -109,8 +110,9 @@ Open <http://localhost:5173>. The dev server forwards `/api` requests to the bac
 ### Try it
 
 1. **Variance:** the home page opens on FY2026 (January–September). Expand **Fleet & Equipment** to see the fuel price spike on Vehicle & Fuel, click **Trend** to see it month by month, and use **Export to Excel**.
-2. **Budget entry:** pick FY2026 and a department, change a few cells (changed cells turn yellow, invalid ones red), and save.
-3. **Import actuals:** upload [`samples/actuals-2026-10.csv`](samples/) or the `.xlsx` version to add October 2026, then upload `samples/actuals-with-errors.csv` to see row-level validation errors. After importing October, the variance page offers October in its range.
+2. **Forecast:** compare the Base, Best and Worst full-year net income, click a scenario to see its months (October–December shaded as forecast), then change a driver (e.g. active contracts) and save to see the outlook update.
+3. **Budget entry:** pick FY2026 and a department, change a few cells (changed cells turn yellow, invalid ones red), and save.
+4. **Import actuals:** upload [`samples/actuals-2026-10.csv`](samples/) or the `.xlsx` version to add October 2026, then upload `samples/actuals-with-errors.csv` to see row-level validation errors. After importing October, the variance page offers October in its range and the forecast treats October as actual.
 
 ## Running tests
 

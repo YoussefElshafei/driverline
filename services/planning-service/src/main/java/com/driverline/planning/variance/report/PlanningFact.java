@@ -2,6 +2,9 @@ package com.driverline.planning.variance.report;
 
 import com.driverline.planning.account.AccountType;
 import java.math.BigDecimal;
+import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * Budget and actual for one account, in one department, in one month of the report year.
@@ -21,5 +24,10 @@ public record PlanningFact(
 
     public boolean hasActual() {
         return actual != null;
+    }
+
+    /** Months with at least one actual recorded: their books are closed and they can be compared to budget. */
+    public static Set<Integer> closedMonths(List<PlanningFact> facts) {
+        return facts.stream().filter(PlanningFact::hasActual).map(PlanningFact::month).collect(Collectors.toSet());
     }
 }
