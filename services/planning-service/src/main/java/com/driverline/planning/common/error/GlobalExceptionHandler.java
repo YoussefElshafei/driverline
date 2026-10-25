@@ -2,6 +2,7 @@ package com.driverline.planning.common.error;
 
 import com.driverline.planning.actual.importing.ImportValidationException;
 import com.driverline.planning.actual.importing.UnsupportedFileTypeException;
+import com.driverline.planning.commentary.CommentaryUnavailableException;
 import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -68,6 +69,14 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     ProblemDetail handleUnsupportedFileType(UnsupportedFileTypeException ex) {
         ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.UNSUPPORTED_MEDIA_TYPE, ex.getMessage());
         problem.setTitle("Unsupported file type");
+        return problem;
+    }
+
+    @ExceptionHandler(CommentaryUnavailableException.class)
+    ProblemDetail handleCommentaryUnavailable(CommentaryUnavailableException ex) {
+        log.warn("Commentary service unavailable: {}", ex.getMessage());
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.SERVICE_UNAVAILABLE, ex.getMessage());
+        problem.setTitle("Commentary unavailable");
         return problem;
     }
 

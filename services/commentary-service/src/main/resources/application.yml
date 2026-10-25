@@ -1,0 +1,22 @@
+spring:
+  application:
+    name: commentary-service
+
+server:
+  port: ${COMMENTARY_SERVICE_PORT:8082}
+
+commentary:
+  llm:
+    # "ollama" uses a local Ollama server; "none" always uses the rule-based writer (no LLM needed).
+    provider: ${COMMENTARY_LLM_PROVIDER:ollama}
+  ollama:
+    base-url: ${OLLAMA_BASE_URL:http://localhost:11434}
+    model: ${OLLAMA_MODEL:llama3.1:8b}
+    # Generous because the first request after a while loads the model into memory.
+    timeout: ${OLLAMA_TIMEOUT_SECONDS:120}s
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info

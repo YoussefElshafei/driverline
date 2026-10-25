@@ -468,3 +468,33 @@ a.button {
 .row-changed th[scope='row'] {
   box-shadow: inset 3px 0 0 var(--accent);
 }
+
+/* ---- Commentary ---- */
+
+.commentary {
+  margin-top: 1.5rem;
+  padding: 1rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--surface);
+}
+
+.commentary h3 {
+  margin: 0;
+}
+
+.commentary-period {
+  margin: 0.75rem 0 0.25rem;
+  font-weight: 600;
+}
+
+/* The commentary arrives as plain text with paragraph breaks and "- " bullets. */
+.commentary-text {
+  white-space: pre-line;
+  line-height: 1.6;
+}
+
+.commentary-source {
+  margin-top: 0.75rem;
+  font-size: 0.8rem;
+}

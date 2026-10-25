@@ -247,3 +247,18 @@ export interface DriverLineRequest {
   rateLabel: string | null
   values: Record<string, DriverValues>
 }
+
+/** Plain-English commentary on a period's largest variances, written by commentary-service. */
+export interface VarianceCommentary {
+  year: number
+  fromMonth: number
+  toMonth: number
+  periodLabel: string
+  text: string
+  /** A language model provider such as "ollama", or "rule-based" */
+  provider: string
+  /** The language model used, or null for rule-based text */
+  model: string | null
+  /** Why the rule-based writer was used instead of the language model, or null */
+  fallbackReason: string | null
+}

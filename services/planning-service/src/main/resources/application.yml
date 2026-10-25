@@ -26,6 +26,12 @@ management:
       exposure:
         include: health,info
 
+commentary:
+  # The commentary-service that writes plain-English variance commentary.
+  service-url: ${COMMENTARY_SERVICE_URL:http://localhost:8082}
+  # Longer than commentary-service's own language model timeout (120s), so its rule-based fallback can answer first.
+  timeout: ${COMMENTARY_TIMEOUT_SECONDS:150}s
+
 driverline:
   seed:
     # Loads the fictional Ace Janitorial Service into an empty database on startup.

@@ -15,6 +15,7 @@ import type {
 } from '../../api/types'
 import { MONTH_LONG, monthName } from '../../lib/months'
 import { AccountView } from './AccountView'
+import { CommentaryPanel } from './CommentaryPanel'
 import { DepartmentView } from './DepartmentView'
 import { type MonthlyScope, MonthlyView } from './MonthlyView'
 
@@ -225,6 +226,16 @@ export function VariancePage() {
         <AccountView
           report={report.data}
           onShowTrend={(account) => showTrend(undefined, account)}
+        />
+      )}
+      {!loading && report && report.view !== 'month' && (
+        <CommentaryPanel
+          key={`${year}-${report.data.fromMonth}-${report.data.toMonth}`}
+          query={{
+            year,
+            fromMonth: report.data.fromMonth,
+            toMonth: report.data.toMonth,
+          }}
         />
       )}
       {!loading && report?.view === 'month' && (

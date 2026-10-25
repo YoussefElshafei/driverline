@@ -1,6 +1,6 @@
 # Architecture
 
-> Status: Phase 4. Data model, demo data, budget entry, actuals import (CSV/XLSX), variance reports with drill-down, Excel export, and driver-based forecasting with Base/Best/Worst scenarios exist. AI commentary is not built yet.
+> Status: Phase 5. Data model, demo data, budget entry, actuals import (CSV/XLSX), variance reports with drill-down, Excel export, driver-based forecasting with Base/Best/Worst scenarios, and AI variance commentary exist. Running every service in Docker Compose is Phase 6.
 
 ## Services
 
@@ -8,14 +8,16 @@
 | --- | --- | --- |
 | `frontend` | Variance, forecast, budget entry and actuals import pages | React + TypeScript UI, served by nginx in Docker |
 | `planning-service` | Reference data, budgets, actuals import, variance reports, forecasting and Excel export built | Accounts, departments, budgets, actuals, variances, forecasts, scenarios, Excel import/export |
-| `commentary-service` | Planned (Phase 5) | Generates plain-English variance commentary through a swappable LLM interface with a rule-based fallback |
+| `commentary-service` | Built (port 8082, no database) | Writes plain-English commentary on variances it is given, through a swappable `LanguageModel` (Ollama) with an output guard and a rule-based fallback |
 | PostgreSQL | Running via Docker Compose | Stores all planning data; schema managed by Flyway |
+| Ollama | Runs natively on the host (port 11434) | Local language model server; `llama3.1:8b` by default. Optional: without it, commentary is rule-based |
 
 ```mermaid
 flowchart LR
     frontend[frontend] -->|HTTP/JSON| planning[planning-service]
     planning -->|JDBC| db[(PostgreSQL)]
-    planning -.->|HTTP/JSON, planned| commentary[commentary-service]
+    planning -->|HTTP/JSON: totals + top 5 variances| commentary[commentary-service]
+    commentary -->|HTTP: /api/chat| ollama[Ollama]
 ```
 
 ## Data model
@@ -113,9 +115,20 @@ com.driverline.planning
 │   ├── engine     ForecastInputAssembler and ForecastEngine (pure: actuals + drivers -> 12 months per line)
 │   ├── dto        Forecast report, scenario comparison and driver grid shapes
 │   └── export     Forecast workbook writer (monthly columns + scenario sheet)
+├── commentary   GET /api/variance/commentary: picks the top variances, calls commentary-service (client, selector, service)
 ├── period       FiscalPeriod value object (year + month)
-├── common       LineKey, MoneyParser, money-as-string JSON config, global error handler, OpenAPI config
+├── common       LineKey, MoneyParser, money-as-string JSON config, global error handler, OpenAPI config, shared Excel helpers
 └── seed         Demo company profile, data generator, loader
+```
+
+`commentary-service` is small and has no database:
+
+```
+com.driverline.commentary
+├── api          POST /api/commentary controller and request/response records
+├── generation   CommentaryService (LLM first, fallback on failure), PromptBuilder, OutputGuard, RuleBasedCommentaryWriter, Amounts
+├── llm          LanguageModel interface, OllamaLanguageModel, configuration (provider, URL, model, timeouts)
+└── common       Problem-details error handler, OpenAPI config
 ```
 
 The frontend is organised the same way:
@@ -125,7 +138,7 @@ frontend/src
 ├── api           Typed fetch client and API types
 ├── lib           money.ts: parsing, cents arithmetic, formatting
 └── features
-    ├── variance  Variance page: department (drill-down), account and monthly views, summary cards
+    ├── variance  Variance page: department (drill-down), account and monthly views, summary cards, AI commentary panel
     ├── forecast  Forecast page: scenario cards, 12-month table, driver editor
     ├── budgets   Budget entry page, grid, edit-tracking logic
     └── actuals   Import page and error table
@@ -223,6 +236,35 @@ flowchart LR
 ```
 
 Forecasts are calculated on every request from the stored drivers, so a driver edit or a new month of actuals shows up immediately. `GET /api/forecast/compare` runs the engine once per scenario.
+
+### AI commentary
+
+```mermaid
+sequenceDiagram
+    actor User
+    participant UI as CommentaryPanel (React)
+    participant P as planning-service
+    participant C as commentary-service
+    participant O as Ollama (llama3.1:8b)
+
+    User->>UI: Generate commentary
+    UI->>P: GET /api/variance/commentary?year&fromMonth&toMonth
+    P->>P: Variance report + top 5 variances by dollars
+    P->>C: POST /api/commentary {periodLabel, totals, highlights}
+    C->>C: PromptBuilder (figures pre-formatted, direction in words)
+    C->>O: POST /api/chat (temperature 0.2)
+    alt answer arrives and passes OutputGuard
+        O-->>C: text
+        C-->>P: {text, provider: "ollama", model}
+    else off, unreachable, timeout, error, or invented figures
+        C->>C: RuleBasedCommentaryWriter
+        C-->>P: {text, provider: "rule-based", fallbackReason}
+    end
+    P-->>UI: commentary + period
+    Note over P,C: If commentary-service is down, planning-service returns 503
+```
+
+See [ADR 0015](adr/0015-llm-behind-an-interface-with-fallback-and-guard.md) and [ADR 0016](adr/0016-planning-orchestrates-stateless-commentary-service.md).
 
 ## Health checks
 

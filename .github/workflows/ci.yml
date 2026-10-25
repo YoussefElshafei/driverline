@@ -20,7 +20,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        service: [planning-service]
+        service: [planning-service, commentary-service]
     defaults:
       run:
         working-directory: services/${{ matrix.service }}
@@ -92,6 +92,9 @@ jobs:
 
       - name: Build planning-service image
         run: docker build -t driverline/planning-service:ci services/planning-service
+
+      - name: Build commentary-service image
+        run: docker build -t driverline/commentary-service:ci services/commentary-service
 
       - name: Build frontend image
         run: docker build -t driverline/frontend:ci frontend

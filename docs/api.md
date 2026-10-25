@@ -1,11 +1,15 @@
-# planning-service API
+# API
 
-Interactive documentation is generated from the code by springdoc. With the service running:
+DriverLine has two backend services. The frontend calls only **planning-service**; planning-service calls **commentary-service** (see [commentary-service](#commentary-service) below).
 
-- Swagger UI: <http://localhost:8080/swagger-ui.html>
-- OpenAPI spec (JSON): <http://localhost:8080/v3/api-docs>
+Interactive documentation is generated from the code by springdoc. With the services running:
+
+- planning-service Swagger UI: <http://localhost:8080/swagger-ui.html> (OpenAPI JSON: `/v3/api-docs`)
+- commentary-service Swagger UI: <http://localhost:8082/swagger-ui.html> (OpenAPI JSON: `/v3/api-docs`)
 
 This page summarises the endpoints and the conventions that apply to all of them.
+
+# planning-service
 
 ## Conventions
 
@@ -33,6 +37,7 @@ This page summarises the endpoints and the conventions that apply to all of them
 | GET | `/api/forecast/drivers?year=2026` | Every forecastable line with its method, labels and values per scenario |
 | PUT | `/api/forecast/drivers` | Create or update methods and driver values. All-or-nothing |
 | GET | `/api/forecast/export?year=2026[&scenario=BASE]` | Forecast workbook (monthly columns, forecast months shaded) plus a scenario comparison sheet |
+| GET | `/api/variance/commentary?year=2026[&fromMonth&toMonth]` | Plain-English commentary on the period's largest variances (calls commentary-service) |
 | GET | `/actuator/health` | `UP` when the service can reach the database |
 
 ### Variance reports
@@ -153,3 +158,69 @@ Rejected file (422). `row` matches the row number shown in Excel; `row: null` me
 ```
 
 Other statuses: 415 for unsupported file types, 413 for files over 5 MB, 400 when the `file` part is missing.
+
+### Variance commentary
+
+`GET /api/variance/commentary?year=2026` builds the variance report for the period (same month defaults as the reports), picks the **five largest account variances by dollar amount**, and asks commentary-service to explain them ([ADR 0016](adr/0016-planning-orchestrates-stateless-commentary-service.md)).
+
+```json
+{
+  "year": 2026, "fromMonth": 1, "toMonth": 9,
+  "periodLabel": "FY2026, January to September",
+  "text": "The company's revenue is below budget by $53,962, or 1.7% ...",
+  "provider": "ollama",
+  "model": "llama3.1:8b",
+  "fallbackReason": null
+}
+```
+
+`provider` is `"rule-based"` (with `model: null` and a `fallbackReason`) when the language model was off, unreachable, slow, or its answer failed validation. If commentary-service itself can't be reached, the response is **503** with title `"Commentary unavailable"`.
+
+# commentary-service
+
+Port 8082, no database. It never recalculates figures; it only describes the ones it is given ([ADR 0015](adr/0015-llm-behind-an-interface-with-fallback-and-guard.md)).
+
+| Method | Path | Purpose |
+| --- | --- | --- |
+| POST | `/api/commentary` | Write commentary for the given totals and highlights |
+| GET | `/actuator/health` | `UP` when the service is running (it does not check Ollama) |
+
+Request (sent by planning-service; amounts may be JSON strings or numbers; at most 10 highlights):
+
+```json
+{
+  "periodLabel": "FY2026, January to September",
+  "revenue":   {"budget": "3223605.00", "actual": "3169643.42", "variance": "-53961.58", "variancePercent": "-1.7", "favorability": "UNFAVORABLE"},
+  "expenses":  {"budget": "2936125.50", "actual": "2960379.17", "variance": "24253.67", "variancePercent": "0.8", "favorability": "UNFAVORABLE"},
+  "netIncome": {"budget": "287479.50", "actual": "209264.25", "variance": "-78215.25", "variancePercent": "-27.2", "favorability": "UNFAVORABLE"},
+  "highlights": [{
+    "accountName": "Vehicle & Fuel", "departmentName": "Fleet & Equipment", "accountType": "EXPENSE",
+    "figures": {"budget": "142065.00", "actual": "156518.61", "variance": "14453.61", "variancePercent": "10.2", "favorability": "UNFAVORABLE"}
+  }]
+}
+```
+
+Response:
+
+```json
+{ "text": "...", "provider": "ollama", "model": "llama3.1:8b", "fallbackReason": null }
+```
+
+How the text is produced:
+
+1. If `COMMENTARY_LLM_PROVIDER=none`, or no language model is configured, return rule-based text (`fallbackReason`: "AI commentary is turned off ...").
+2. Otherwise ask the language model (Ollama `POST /api/chat`), with figures pre-formatted and the direction in words.
+3. Check the answer: strip `<think>` tags, reject blank or over-long text, and reject any number of 1,000 or more that isn't an input amount or the fiscal year.
+4. On any failure (connection refused, timeout, HTTP error, rejected answer), return rule-based text with the reason.
+
+Invalid requests return **400** problem details with an `errors` list, in the same format as planning-service.
+
+Configuration (environment variables):
+
+| Variable | Default | Meaning |
+| --- | --- | --- |
+| `COMMENTARY_SERVICE_PORT` | `8082` | Port |
+| `COMMENTARY_LLM_PROVIDER` | `ollama` | `ollama` or `none` |
+| `OLLAMA_BASE_URL` | `http://localhost:11434` | Ollama server |
+| `OLLAMA_MODEL` | `llama3.1:8b` | Model name (must be pulled first: `ollama pull llama3.1:8b`) |
+| `OLLAMA_TIMEOUT_SECONDS` | `120` | How long to wait for an answer |

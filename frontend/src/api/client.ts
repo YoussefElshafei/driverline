@@ -13,6 +13,7 @@ import type {
   ProblemDetail,
   SaveBudgetResult,
   ScenarioComparison,
+  VarianceCommentary,
 } from './types'
 
 /** Thrown for any non-2xx response. Carries the server's problem details when it sent them. */
@@ -116,6 +117,10 @@ export const varianceApi = {
   byMonth: (query: MonthlyQuery) =>
     request<MonthlyVarianceReport>(
       `/api/variance/by-month?${queryString(query)}`,
+    ),
+  commentary: (query: PeriodQuery) =>
+    request<VarianceCommentary>(
+      `/api/variance/commentary?${queryString(query)}`,
     ),
 }
 
