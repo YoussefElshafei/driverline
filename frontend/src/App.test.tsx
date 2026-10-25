@@ -18,6 +18,10 @@ describe('App', () => {
     expect(
       screen.getByRole('heading', { level: 1, name: 'DriverLine' }),
     ).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Variance' })).toHaveAttribute(
+      'href',
+      '/variance',
+    )
     expect(screen.getByRole('link', { name: 'Budget entry' })).toHaveAttribute(
       'href',
       '/budgets',

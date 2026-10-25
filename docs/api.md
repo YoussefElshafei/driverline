@@ -23,7 +23,46 @@ This page summarises the endpoints and the conventions that apply to all of them
 | PUT | `/api/budgets` | Create or update budget cells. All-or-nothing |
 | POST | `/api/actuals/import` | Import actuals from a `.csv` or `.xlsx` file (multipart field `file`). All-or-nothing; re-imported cells are replaced ([ADR 0008](adr/0008-all-or-nothing-actuals-import-with-upsert.md)) |
 | GET | `/api/actuals/import/template` | Example CSV with the required columns |
+| GET | `/api/variance/by-department?year=2026[&fromMonth=1&toMonth=9]` | Company summary plus each department's net contribution, with its accounts nested (drill-down) |
+| GET | `/api/variance/by-account?year=2026[&fromMonth&toMonth]` | P&L layout: revenue and expense accounts combined across departments |
+| GET | `/api/variance/by-month?year=2026[&department=FLEET][&account=5300]` | 12-month trend for net income, a department's net contribution, or one account |
+| GET | `/api/variance/{by-department,by-account,by-month}/export?...` | The same report as a formatted `.xlsx` workbook |
 | GET | `/actuator/health` | `UP` when the service can reach the database |
+
+### Variance reports
+
+Rules ([ADR 0010](adr/0010-variance-sign-and-percentage-rules.md), [ADR 0011](adr/0011-net-contribution-and-closed-months.md)):
+
+- `variance = actual − budget`; `variancePercent = variance ÷ |budget| × 100` (1 decimal), `null` when the budget is 0.
+- `favorability`: `FAVORABLE`, `UNFAVORABLE` or `ON_BUDGET`. Revenue and net figures: higher is better. Expenses: lower is better.
+- Department totals are **net contribution** (revenue − expenses).
+- `fromMonth`/`toMonth` default to January through `latestActualMonth` (the last month with any actuals). Within the range, a missing actual counts as zero.
+
+Every report line has this shape (real demo data: Vehicle & Fuel, FY2026 January–September):
+
+```json
+{ "budget": "142065.00", "actual": "156518.61", "variance": "14453.61", "variancePercent": "10.2", "favorability": "UNFAVORABLE" }
+```
+
+`GET /api/variance/by-department?year=2026` (abridged):
+
+```json
+{
+  "year": 2026, "fromMonth": 1, "toMonth": 9, "latestActualMonth": 9,
+  "summary": { "revenue": { ... }, "expenses": { ... }, "netIncome": { ... } },
+  "departments": [
+    {
+      "departmentCode": "FLEET", "departmentName": "Fleet & Equipment",
+      "netContribution": { ... },
+      "accounts": [ { "accountCode": "5300", "accountName": "Vehicle & Fuel", "accountType": "EXPENSE", "line": { ... } } ]
+    }
+  ]
+}
+```
+
+In `by-month`, each of the 12 months has `budget`, `closed` and `variance` (`null` for months without actuals), plus `closedMonthsTotal`.
+
+**Excel exports** ([ADR 0012](adr/0012-excel-export-with-live-formulas.md)) return `application/vnd.openxmlformats-officedocument.spreadsheetml.sheet` with a descriptive file name such as `variance-by-department-FY2026-Jan-Sep.xlsx`. Variance columns are live Excel formulas; account rows are grouped under their department.
 
 ### Save budget
 

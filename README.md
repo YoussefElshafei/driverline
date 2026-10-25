@@ -4,7 +4,7 @@
 
 A budget vs. actual variance analysis and driver-based forecasting app for a small company's finance team.
 
-> **Status:** in development (Phase 2 of 6). Budget entry and actuals import work today; variance reports, Excel export, forecasting and AI commentary are planned. This README is updated as each feature ships.
+> **Status:** in development (Phase 3 of 6). Budget entry, actuals import, variance reports with drill-down, and Excel export work today; driver-based forecasting and AI commentary are planned. This README is updated as each feature ships.
 
 ## Why this exists
 
@@ -29,12 +29,14 @@ The data is generated in code from a fixed random seed, so every run produces th
 - **Chart of accounts and departments**, seeded for the demo company and available through the API
 - **Monthly budget entry:** an editable grid per fiscal year and department, with live row totals, inline validation, adding account rows, and all-or-nothing saves
 - **Actuals import from CSV and Excel (.xlsx):** every row is validated before anything is saved; a rejected file returns every problem with its row number, column and value. Re-importing a month replaces its amounts instead of duplicating them. Accepts `1,234.56`, `$1,234.56` and accounting-style `(1,234.56)`
+- **Budget vs. actual variance reports** by department, by account and by month, with dollar and percent variances and favorable/unfavorable flags that respect account type (revenue above budget is favorable; expenses above budget are unfavorable)
+- **Drill-down** from department totals (net contribution) to individual accounts, and from any account to its monthly trend
+- **Period selection** that defaults to the months with actuals and warns when a range goes past them
+- **Excel export** of every report: live variance formulas, expandable department groups, accounting formats, colour-coded status, print-ready layout
 - **API documentation** generated with springdoc (Swagger UI)
 
 **Planned**
 
-- Budget vs. actual variance reports with favorable/unfavorable flags and drill-down
-- Excel export of reports
 - Driver-based forecasting with Base / Best / Worst scenarios
 - Plain-English variance commentary from a local LLM, with a rule-based fallback
 
@@ -106,8 +108,9 @@ Open <http://localhost:5173>. The dev server forwards `/api` requests to the bac
 
 ### Try it
 
-1. **Budget entry:** pick FY2026 and a department, change a few cells (changed cells turn yellow, invalid ones red), and save.
-2. **Import actuals:** upload [`samples/actuals-2026-10.csv`](samples/) or the `.xlsx` version to add October 2026, then upload `samples/actuals-with-errors.csv` to see row-level validation errors.
+1. **Variance:** the home page opens on FY2026 (January–September). Expand **Fleet & Equipment** to see the fuel price spike on Vehicle & Fuel, click **Trend** to see it month by month, and use **Export to Excel**.
+2. **Budget entry:** pick FY2026 and a department, change a few cells (changed cells turn yellow, invalid ones red), and save.
+3. **Import actuals:** upload [`samples/actuals-2026-10.csv`](samples/) or the `.xlsx` version to add October 2026, then upload `samples/actuals-with-errors.csv` to see row-level validation errors. After importing October, the variance page offers October in its range.
 
 ## Running tests
 

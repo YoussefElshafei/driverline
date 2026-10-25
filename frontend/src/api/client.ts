@@ -1,9 +1,12 @@
 import type {
   Account,
+  AccountVarianceReport,
   BudgetEntry,
   BudgetGrid,
   Department,
+  DepartmentVarianceReport,
   ImportSummary,
+  MonthlyVarianceReport,
   ProblemDetail,
   SaveBudgetResult,
 } from './types'
@@ -71,3 +74,53 @@ export const api = {
 }
 
 export const ACTUALS_TEMPLATE_URL = '/api/actuals/import/template'
+
+export interface PeriodQuery {
+  year: number
+  /** Omit to let the server default to January */
+  fromMonth?: number
+  /** Omit to let the server default to the latest month with actuals */
+  toMonth?: number
+}
+
+export interface MonthlyQuery {
+  year: number
+  department?: string
+  account?: string
+}
+
+/** Builds a query string, leaving out parameters that are undefined. */
+function queryString(params: object): string {
+  const search = new URLSearchParams()
+  for (const [key, value] of Object.entries(params)) {
+    if (value !== undefined && value !== '') {
+      search.set(key, String(value))
+    }
+  }
+  return search.toString()
+}
+
+export const varianceApi = {
+  byDepartment: (query: PeriodQuery) =>
+    request<DepartmentVarianceReport>(
+      `/api/variance/by-department?${queryString(query)}`,
+    ),
+  byAccount: (query: PeriodQuery) =>
+    request<AccountVarianceReport>(
+      `/api/variance/by-account?${queryString(query)}`,
+    ),
+  byMonth: (query: MonthlyQuery) =>
+    request<MonthlyVarianceReport>(
+      `/api/variance/by-month?${queryString(query)}`,
+    ),
+}
+
+/** Plain links: the browser downloads the .xlsx itself, using the file name the server sends. */
+export const varianceExportUrl = {
+  byDepartment: (query: PeriodQuery) =>
+    `/api/variance/by-department/export?${queryString(query)}`,
+  byAccount: (query: PeriodQuery) =>
+    `/api/variance/by-account/export?${queryString(query)}`,
+  byMonth: (query: MonthlyQuery) =>
+    `/api/variance/by-month/export?${queryString(query)}`,
+}

@@ -1,23 +1,12 @@
 import type { BudgetEntry, BudgetGridRow } from '../../api/types'
 import { parseMoney, sumAmounts, toCents } from '../../lib/money'
+import { MONTH_SHORT } from '../../lib/months'
 
 /** What the user has typed, keyed by cell. Cells the user hasn't touched are absent. */
 export type CellEdits = Readonly<Record<string, string>>
 
-export const MONTH_LABELS = [
-  'Jan',
-  'Feb',
-  'Mar',
-  'Apr',
-  'May',
-  'Jun',
-  'Jul',
-  'Aug',
-  'Sep',
-  'Oct',
-  'Nov',
-  'Dec',
-] as const
+/** Month column headings, January first. */
+export const MONTH_LABELS = MONTH_SHORT
 
 export function cellKey(row: BudgetGridRow, monthIndex: number): string {
   return `${row.departmentCode}|${row.accountCode}|${monthIndex}`

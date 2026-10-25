@@ -242,3 +242,164 @@ thead .sticky-col {
   margin-top: 0.5rem;
   color: var(--text);
 }
+
+/* ---- Variance reports ---- */
+
+.message-warning {
+  background: #fff8c5;
+  color: #7d4e00;
+}
+
+a.button {
+  padding: 0.35rem 0.8rem;
+  border: 1px solid var(--accent);
+  border-radius: 6px;
+  background: var(--surface);
+  color: var(--accent);
+  text-decoration: none;
+}
+
+.tabs {
+  display: flex;
+  gap: 0.25rem;
+  margin-bottom: 1rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.tab {
+  border: none;
+  border-bottom: 2px solid transparent;
+  border-radius: 0;
+  background: none;
+  color: var(--muted);
+}
+
+.tab-active {
+  border-bottom-color: var(--accent);
+  color: var(--text);
+  font-weight: 600;
+}
+
+.summary-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr));
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.summary-card {
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--surface);
+}
+
+.summary-card h3 {
+  margin: 0;
+  font-size: 0.875rem;
+  color: var(--muted);
+}
+
+.summary-card p {
+  margin: 0.15rem 0;
+}
+
+.summary-actual {
+  font-size: 1.5rem;
+  font-weight: 600;
+}
+
+.summary-budget {
+  color: var(--muted);
+  font-size: 0.875rem;
+}
+
+.table-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.report th[scope='row'] {
+  font-weight: normal;
+}
+
+.row-department th[scope='row'],
+.row-subtotal th,
+.row-subtotal td,
+.row-total th,
+.row-total td {
+  font-weight: 600;
+}
+
+.row-account th[scope='row'] {
+  padding-left: 2rem;
+}
+
+.row-section th {
+  background: var(--surface-alt);
+  font-weight: 600;
+}
+
+.row-total th,
+.row-total td {
+  border-top: 2px solid var(--text);
+}
+
+.row-open {
+  color: var(--muted);
+}
+
+.toggle {
+  width: 1.75rem;
+  margin-right: 0.35rem;
+  padding: 0 0.25rem;
+  border: none;
+  background: none;
+}
+
+.link-button {
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--accent);
+  text-decoration: underline;
+}
+
+.flag {
+  padding: 0.05rem 0.5rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.flag-favorable {
+  background: var(--success-bg);
+  color: var(--success);
+}
+
+.flag-unfavorable {
+  background: var(--error-bg);
+  color: var(--error);
+}
+
+.flag-on-budget,
+.flag-open {
+  background: var(--surface-alt);
+  color: var(--muted);
+}
+
+.scope-title {
+  margin: 0.5rem 0;
+  font-size: 1rem;
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}

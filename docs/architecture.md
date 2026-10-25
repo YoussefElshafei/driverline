@@ -1,13 +1,13 @@
 # Architecture
 
-> Status: Phase 2. Data model, demo data, budget entry and actuals import (CSV/XLSX) exist. Variance reports, forecasting and commentary are not built yet.
+> Status: Phase 3. Data model, demo data, budget entry, actuals import (CSV/XLSX), variance reports with drill-down, and Excel export exist. Forecasting and AI commentary are not built yet.
 
 ## Services
 
 | Component | Status | Responsibility |
 | --- | --- | --- |
-| `frontend` | Budget entry and actuals import pages | React + TypeScript UI, served by nginx in Docker |
-| `planning-service` | Reference data, budgets and actuals import built | Accounts, departments, budgets, actuals, variances, forecasts, scenarios, Excel import/export |
+| `frontend` | Variance reports, budget entry and actuals import pages | React + TypeScript UI, served by nginx in Docker |
+| `planning-service` | Reference data, budgets, actuals import, variance reports and Excel export built | Accounts, departments, budgets, actuals, variances, forecasts, scenarios, Excel import/export |
 | `commentary-service` | Planned (Phase 5) | Generates plain-English variance commentary through a swappable LLM interface with a rule-based fallback |
 | PostgreSQL | Running via Docker Compose | Stores all planning data; schema managed by Flyway |
 
@@ -76,6 +76,10 @@ com.driverline.planning
 ├── budget       BudgetLine entity + repository, budget grid and save (controller, service, assembler, DTOs)
 ├── actual       ActualLine entity + repository
 │   └── importing  CSV/XLSX parsers, row validator, import service and controller
+├── variance     Variance rules (VarianceCalculator), reports and controller
+│   ├── report     PlanningFact loading, ReportPeriod, VarianceReportBuilder (pure aggregation)
+│   ├── dto        Report shapes returned by the API
+│   └── export     ExcelReport layout, mapper and POI workbook writer
 ├── period       FiscalPeriod value object (year + month)
 ├── common       LineKey, MoneyParser, money-as-string JSON config, global error handler, OpenAPI config
 └── seed         Demo company profile, data generator, loader
@@ -88,6 +92,7 @@ frontend/src
 ├── api           Typed fetch client and API types
 ├── lib           money.ts: parsing, cents arithmetic, formatting
 └── features
+    ├── variance  Variance page: department (drill-down), account and monthly views, summary cards
     ├── budgets   Budget entry page, grid, edit-tracking logic
     └── actuals   Import page and error table
 ```
@@ -152,6 +157,22 @@ flowchart LR
     val -->|all valid| upsert[Update existing / create new<br/>one transaction]
     upsert --> ok[200 ImportSummary]
 ```
+
+### Variance report
+
+```mermaid
+flowchart LR
+    req[GET /api/variance/by-department] --> svc[VarianceService]
+    svc --> load[PlanningFactLoader<br/>2 queries: budgets + actuals for the year]
+    load --> facts[PlanningFact list<br/>one per account x department x month]
+    facts --> period[ReportPeriod.resolve<br/>default Jan to latest closed month]
+    period --> build[VarianceReportBuilder<br/>filter, group, net, sum]
+    build --> calc[VarianceCalculator<br/>variance, %, favorability]
+    calc --> json[JSON report]
+    json -.export.-> excel[VarianceExcelMapper -> VarianceWorkbookWriter<br/>.xlsx with formulas + grouping]
+```
+
+Department totals are **net contribution** (revenue − expenses), so departments add up to company net income and each department's accounts add up to its total ([ADR 0011](adr/0011-net-contribution-and-closed-months.md)).
 
 ## Health checks
 
