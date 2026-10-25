@@ -1,0 +1,8 @@
+# Store text files with LF endings so shell scripts (like mvnw) run on the Linux CI runners and in Docker.
+* text=auto eol=lf
+*.cmd text eol=crlf
+*.bat text eol=crlf
+
+*.png binary
+*.jpg binary
+*.xlsx binary

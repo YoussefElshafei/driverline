@@ -1,0 +1,26 @@
+# Private files
+CLAUDE.md
+.claude/
+notes/
+
+# Secrets
+.env
+
+# Java / Maven
+target/
+*.class
+*.log
+
+# Node / frontend
+node_modules/
+dist/
+coverage/
+*.local
+
+# IDEs and OS
+.idea/
+*.iml
+.vscode/*
+!.vscode/extensions.json
+.DS_Store
+Thumbs.db

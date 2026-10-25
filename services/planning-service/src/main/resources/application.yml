@@ -1,0 +1,22 @@
+spring:
+  application:
+    name: planning-service
+  datasource:
+    # Defaults match docker-compose.yml for local development only. Real environments must set these variables.
+    url: ${DB_URL:jdbc:postgresql://localhost:5434/driverline}
+    username: ${DB_USERNAME:driverline}
+    password: ${DB_PASSWORD:driverline}
+  jpa:
+    open-in-view: false
+    hibernate:
+      # Flyway owns the schema; Hibernate only checks that entities match it.
+      ddl-auto: validate
+
+server:
+  port: ${PLANNING_SERVICE_PORT:8080}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
