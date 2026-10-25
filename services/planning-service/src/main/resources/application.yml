@@ -20,3 +20,8 @@ management:
     web:
       exposure:
         include: health,info
+
+driverline:
+  seed:
+    # Loads the fictional Ace Janitorial Service into an empty database on startup.
+    demo-data: ${SEED_DEMO_DATA:true}

@@ -4,13 +4,23 @@
 
 A budget vs. actual variance analysis and driver-based forecasting app for a small company's finance team.
 
-> **Status:** early development (Phase 0: project setup). The features below are planned and are not built yet. This README is updated as each one ships.
+> **Status:** early development (Phase 1 of 6). The database schema and a seeded demo company exist; there is no user-facing feature yet. The features below are planned, and this README is updated as each one ships.
 
 ## Why this exists
 
 Financial planning and analysis (FP&A) teams set a budget for the year, compare it every month against what the company actually spent and earned, and explain the differences (variances) to leadership. They also re-forecast the rest of the year as conditions change. Much of this work is done in spreadsheets. DriverLine is a portfolio project that models that workflow in a web app built on a Java/Spring Boot and React/TypeScript stack.
 
 All data in this project is for a fictional company.
+
+## Demo company
+
+On first start, the backend loads **Ace Janitorial Service**, a fictional commercial janitorial company with about 50 employees and about $4M in annual revenue:
+
+- 4 departments (Sales & Account Management, Operations, Fleet & Equipment, Administration) and 12 accounts
+- FY2025 budget and a full year of actuals; FY2026 budget and actuals for January–September
+- Seasonal patterns (spring and back-to-school peaks for specialty cleaning, winter peaks for fuel and utilities) and a few business events that create visible variances
+
+The data is generated in code from a fixed random seed, so every run produces the same numbers. Set `SEED_DEMO_DATA=false` to start empty. See [docs/architecture.md](docs/architecture.md#demo-data).
 
 ## Planned features
 
@@ -72,6 +82,8 @@ cd services\planning-service
 
 Health check: <http://localhost:8080/actuator/health>
 
+On startup, Flyway creates the schema and the demo company is loaded into the empty database. To reset the database, run `docker compose down -v` (this deletes the data volume), then `docker compose up -d`.
+
 ### Run the frontend
 
 ```powershell
@@ -84,7 +96,14 @@ Open <http://localhost:5173>.
 
 ## Running tests
 
-Backend (integration tests need Docker running):
+Backend unit tests only (fast, no Docker needed):
+
+```powershell
+cd services\planning-service
+.\mvnw.cmd test
+```
+
+Backend unit and integration tests (integration tests need Docker running):
 
 ```powershell
 cd services\planning-service
