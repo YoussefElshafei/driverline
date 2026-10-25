@@ -3,6 +3,7 @@ import type {
   Department,
   MonthlyVarianceReport,
 } from '../../api/types'
+import { MonthlyChart } from '../../charts/MonthlyChart'
 import { formatMoney } from '../../lib/money'
 import { monthName } from '../../lib/months'
 import { VarianceCells, VarianceHeaderCells } from './VarianceCells'
@@ -29,45 +30,71 @@ export function MonthlyView({
   onScopeChange,
 }: MonthlyViewProps) {
   return (
-    <>
-      <div className="toolbar">
-        <label>
-          Department
-          <select
-            value={scope.department ?? ''}
-            onChange={(e) =>
-              onScopeChange({
-                ...scope,
-                department: e.target.value || undefined,
-              })
-            }
-          >
-            <option value="">All departments</option>
-            {departments.map((d) => (
-              <option key={d.code} value={d.code}>
-                {d.name}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label>
-          Account
-          <select
-            value={scope.account ?? ''}
-            onChange={(e) =>
-              onScopeChange({ ...scope, account: e.target.value || undefined })
-            }
-          >
-            <option value="">Net income (all accounts)</option>
-            {accounts.map((a) => (
-              <option key={a.code} value={a.code}>
-                {a.code} {a.name}
-              </option>
-            ))}
-          </select>
-        </label>
+    <section className="card table-card" aria-labelledby="monthly-heading">
+      <div className="table-heading">
+        <div>
+          <h3 id="monthly-heading" className="card-title scope-title">
+            {report.scope}
+          </h3>
+          <p className="card-subtitle">
+            FY{report.year}, month by month. Months without actuals show their
+            budget only.
+          </p>
+        </div>
+        <div className="toolbar">
+          <label>
+            Department
+            <select
+              value={scope.department ?? ''}
+              onChange={(e) =>
+                onScopeChange({
+                  ...scope,
+                  department: e.target.value || undefined,
+                })
+              }
+            >
+              <option value="">All departments</option>
+              {departments.map((d) => (
+                <option key={d.code} value={d.code}>
+                  {d.name}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label>
+            Account
+            <select
+              value={scope.account ?? ''}
+              onChange={(e) =>
+                onScopeChange({
+                  ...scope,
+                  account: e.target.value || undefined,
+                })
+              }
+            >
+              <option value="">Net income (all accounts)</option>
+              {accounts.map((a) => (
+                <option key={a.code} value={a.code}>
+                  {a.code} {a.name}
+                </option>
+              ))}
+            </select>
+          </label>
+        </div>
       </div>
-      <h3 className="scope-title">{report.scope}</h3>
+      <div className="card-body">
+        <ul className="chart-legend">
+          <li>
+            <span className="key-bar" aria-hidden="true" />
+            Actual
+          </li>
+          <li>
+            <span className="key-line" aria-hidden="true" />
+            Budget
+          </li>
+        </ul>
+        <MonthlyChart report={report} label={report.scope} />
+      </div>
       <div className="table-scroll">
         <table className="report">
           <thead>
@@ -107,6 +134,6 @@ export function MonthlyView({
           </tfoot>
         </table>
       </div>
-    </>
+    </section>
   )
 }

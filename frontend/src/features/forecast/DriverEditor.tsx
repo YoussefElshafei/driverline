@@ -107,14 +107,20 @@ export function DriverEditor({ grid, onSaved }: DriverEditorProps) {
   }
 
   return (
-    <section aria-labelledby="drivers-heading" className="drivers">
-      <h3 id="drivers-heading">Drivers</h3>
-      <p className="hint">
-        Set how each line is forecast for the open months, with values for every
-        scenario. Units × rate multiplies a quantity by a monthly rate; % of
-        revenue follows each month&apos;s forecast revenue; other lines use
-        their budget.
-      </p>
+    <section aria-labelledby="drivers-heading" className="card drivers">
+      <div className="table-heading">
+        <div>
+          <h3 id="drivers-heading" className="card-title">
+            Drivers
+          </h3>
+          <p className="card-subtitle">
+            Set how each line is forecast for the open months, with values for
+            every scenario. Units × rate multiplies a quantity by a monthly
+            rate; % of revenue follows each month&apos;s forecast revenue; other
+            lines use their budget.
+          </p>
+        </div>
+      </div>
       <div className="table-scroll">
         <table className="report drivers-table">
           <thead>
@@ -228,7 +234,7 @@ export function DriverEditor({ grid, onSaved }: DriverEditorProps) {
           </tbody>
         </table>
       </div>
-      <div className="actions">
+      <div className="actions card-footer">
         <button
           type="button"
           className="primary"
@@ -256,7 +262,7 @@ export function DriverEditor({ grid, onSaved }: DriverEditorProps) {
         )}
       </div>
       {saveError && (
-        <div role="alert" className="message message-error">
+        <div role="alert" className="message message-error card-message">
           <p>{saveError.text}</p>
           {saveError.details.length > 0 && (
             <ul>

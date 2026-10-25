@@ -3,7 +3,6 @@ import type {
   AccountVarianceRow,
   VarianceLine,
 } from '../../api/types'
-import { SummaryCards } from './SummaryCards'
 import { VarianceCells, VarianceHeaderCells } from './VarianceCells'
 
 interface AccountViewProps {
@@ -14,9 +13,17 @@ interface AccountViewProps {
 /** Profit-and-loss layout: revenue accounts, expense accounts, net income. */
 export function AccountView({ report, onShowTrend }: AccountViewProps) {
   return (
-    <>
-      <SummaryCards summary={report.summary} />
-      <p className="hint">Each account is combined across all departments.</p>
+    <section className="card table-card" aria-labelledby="accounts-heading">
+      <div className="table-heading">
+        <div>
+          <h3 id="accounts-heading" className="card-title">
+            Profit and loss
+          </h3>
+          <p className="card-subtitle">
+            Each account is combined across all departments.
+          </p>
+        </div>
+      </div>
       <div className="table-scroll">
         <table className="report">
           <thead>
@@ -51,7 +58,7 @@ export function AccountView({ report, onShowTrend }: AccountViewProps) {
           </tfoot>
         </table>
       </div>
-    </>
+    </section>
   )
 }
 

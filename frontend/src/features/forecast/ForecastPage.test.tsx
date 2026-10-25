@@ -4,6 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type {
   DriverGrid,
   ForecastReport,
+  MonthlyVarianceReport,
   ForecastSummary,
   OutlookLine,
   ScenarioComparison,
@@ -157,6 +158,28 @@ const GRID: DriverGrid = {
   ],
 }
 
+const NET_INCOME_BY_MONTH: MonthlyVarianceReport = {
+  year: 2026,
+  departmentCode: null,
+  accountCode: null,
+  scope: 'Net income',
+  direction: 'HIGHER_IS_BETTER',
+  latestActualMonth: 9,
+  months: Array.from({ length: 12 }, (_, i) => ({
+    month: i + 1,
+    budget: '32760.00',
+    closed: false,
+    variance: null,
+  })),
+  closedMonthsTotal: {
+    budget: '0.00',
+    actual: '0.00',
+    variance: '0.00',
+    variancePercent: null,
+    favorability: 'ON_BUDGET',
+  },
+}
+
 function json(body: unknown) {
   return Promise.resolve(
     new Response(JSON.stringify(body), {
@@ -171,6 +194,8 @@ describe('ForecastPage', () => {
 
   beforeEach(() => {
     fetchMock = vi.fn((url: string, init?: RequestInit) => {
+      if (url.startsWith('/api/variance/by-month'))
+        return json(NET_INCOME_BY_MONTH)
       if (url.startsWith('/api/forecast/compare')) return json(COMPARISON)
       if (url.startsWith('/api/forecast/drivers') && init?.method === 'PUT') {
         return json({ year: 2026, linesSaved: 1 })

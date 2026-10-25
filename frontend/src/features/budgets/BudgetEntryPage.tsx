@@ -1,3 +1,4 @@
+import { Plus } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import { ApiError, api } from '../../api/client'
 import type {
@@ -8,6 +9,8 @@ import type {
   Department,
   FieldError,
 } from '../../api/types'
+import { PageHeader } from '../../components/PageHeader'
+import { Skeleton } from '../../components/Skeleton'
 import { BudgetGrid } from './BudgetGrid'
 import {
   type CellEdits,
@@ -140,68 +143,71 @@ export function BudgetEntryPage() {
   }
 
   return (
-    <section aria-labelledby="budget-heading">
-      <h2 id="budget-heading">Budget entry</h2>
-      <p className="hint">
-        Enter monthly budget amounts. Changed cells are highlighted until you
-        save.
-      </p>
+    <section className="page" aria-labelledby="budget-heading">
+      <PageHeader
+        id="budget-heading"
+        title="Budget entry"
+        description="Enter monthly budget amounts. Changed cells are highlighted until you save."
+      />
 
-      <div className="toolbar">
-        <label>
-          Fiscal year
-          <select
-            value={year}
-            onChange={(e) =>
-              changeFilter(Number(e.target.value), departmentCode)
-            }
-          >
-            {YEARS.map((y) => (
-              <option key={y} value={y}>
-                FY{y}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label>
-          Department
-          <select
-            value={departmentCode}
-            onChange={(e) => changeFilter(year, e.target.value)}
-          >
-            <option value="">All departments</option>
-            {departments.map((d) => (
-              <option key={d.code} value={d.code}>
-                {d.name}
-              </option>
-            ))}
-          </select>
-        </label>
-        {selectedDepartment && (
-          <div className="add-row">
-            <label>
-              Add account
-              <select
-                value={accountToAdd}
-                onChange={(e) => setAccountToAdd(e.target.value)}
-              >
-                <option value="">Choose an account…</option>
-                {addableAccounts.map((a) => (
-                  <option key={a.code} value={a.code}>
-                    {a.code} {a.name}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <button
-              type="button"
-              onClick={addAccountRow}
-              disabled={!accountToAdd}
+      <div className="card filter-bar">
+        <div className="toolbar">
+          <label>
+            Fiscal year
+            <select
+              value={year}
+              onChange={(e) =>
+                changeFilter(Number(e.target.value), departmentCode)
+              }
             >
-              Add row
-            </button>
-          </div>
-        )}
+              {YEARS.map((y) => (
+                <option key={y} value={y}>
+                  FY{y}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label>
+            Department
+            <select
+              value={departmentCode}
+              onChange={(e) => changeFilter(year, e.target.value)}
+            >
+              <option value="">All departments</option>
+              {departments.map((d) => (
+                <option key={d.code} value={d.code}>
+                  {d.name}
+                </option>
+              ))}
+            </select>
+          </label>
+          {selectedDepartment && (
+            <div className="add-row">
+              <label>
+                Add account
+                <select
+                  value={accountToAdd}
+                  onChange={(e) => setAccountToAdd(e.target.value)}
+                >
+                  <option value="">Choose an account…</option>
+                  {addableAccounts.map((a) => (
+                    <option key={a.code} value={a.code}>
+                      {a.code} {a.name}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <button
+                type="button"
+                onClick={addAccountRow}
+                disabled={!accountToAdd}
+              >
+                <Plus size={15} aria-hidden="true" />
+                Add row
+              </button>
+            </div>
+          )}
+        </div>
       </div>
 
       {loadError && (
@@ -210,53 +216,63 @@ export function BudgetEntryPage() {
         </p>
       )}
 
-      {loading && !loadError ? (
-        <p>Loading…</p>
-      ) : rows.length === 0 ? (
-        <p>
-          No budget for FY{year}
-          {selectedDepartment ? ` in ${selectedDepartment.name}` : ''} yet.
-          {selectedDepartment
-            ? ' Add an account row to start.'
-            : ' Choose a department to add rows.'}
-        </p>
-      ) : (
-        <BudgetGrid
-          rows={rows}
-          edits={edits}
-          showDepartment={!departmentCode}
-          onCellChange={(row, monthIndex, input) =>
-            setEdits((current) => applyEdit(current, row, monthIndex, input))
-          }
-        />
-      )}
-
-      <div className="actions">
-        <button
-          type="button"
-          className="primary"
-          onClick={save}
-          disabled={saving || invalid || entries.length === 0}
-        >
-          {saving
-            ? 'Saving…'
-            : `Save changes${entries.length ? ` (${entries.length})` : ''}`}
-        </button>
-        <button
-          type="button"
-          onClick={resetEdits}
-          disabled={
-            saving ||
-            (Object.keys(edits).length === 0 && addedRows.length === 0)
-          }
-        >
-          Discard changes
-        </button>
-        {invalid && (
-          <span className="field-error">
-            Fix the highlighted cells before saving.
-          </span>
+      <div className="card table-card">
+        {loading && !loadError ? (
+          <div
+            className="card-body skeleton-stack"
+            role="status"
+            aria-label="Loading budgets"
+          >
+            {[0, 1, 2, 3, 4, 5].map((i) => (
+              <Skeleton key={i} height={18} />
+            ))}
+          </div>
+        ) : rows.length === 0 ? (
+          <p className="card-body hint">
+            No budget for FY{year}
+            {selectedDepartment ? ` in ${selectedDepartment.name}` : ''} yet.
+            {selectedDepartment
+              ? ' Add an account row to start.'
+              : ' Choose a department to add rows.'}
+          </p>
+        ) : (
+          <BudgetGrid
+            rows={rows}
+            edits={edits}
+            showDepartment={!departmentCode}
+            onCellChange={(row, monthIndex, input) =>
+              setEdits((current) => applyEdit(current, row, monthIndex, input))
+            }
+          />
         )}
+
+        <div className="actions card-footer">
+          <button
+            type="button"
+            className="primary"
+            onClick={save}
+            disabled={saving || invalid || entries.length === 0}
+          >
+            {saving
+              ? 'Saving…'
+              : `Save changes${entries.length ? ` (${entries.length})` : ''}`}
+          </button>
+          <button
+            type="button"
+            onClick={resetEdits}
+            disabled={
+              saving ||
+              (Object.keys(edits).length === 0 && addedRows.length === 0)
+            }
+          >
+            Discard changes
+          </button>
+          {invalid && (
+            <span className="field-error">
+              Fix the highlighted cells before saving.
+            </span>
+          )}
+        </div>
       </div>
 
       {message?.kind === 'success' && (

@@ -1,4 +1,5 @@
 import { render, screen } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router'
 import { describe, expect, it } from 'vitest'
 import App from './App'
@@ -40,6 +41,19 @@ describe('App', () => {
 
     expect(
       screen.getByRole('heading', { level: 2, name: 'Import actuals' }),
+    ).toBeInTheDocument()
+  })
+
+  it('collapses the sidebar to icons while keeping the links named', async () => {
+    const user = userEvent.setup()
+    const { container } = renderAt('/actuals/import')
+
+    await user.click(screen.getByRole('button', { name: 'Collapse sidebar' }))
+
+    expect(container.querySelector('.shell')).toHaveClass('is-collapsed')
+    expect(screen.getByRole('link', { name: 'Forecast' })).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: 'Expand sidebar' }),
     ).toBeInTheDocument()
   })
 

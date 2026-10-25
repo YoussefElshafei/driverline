@@ -4,7 +4,7 @@
 
 **Budget vs. actual variance analysis, driver-based forecasting and AI variance commentary for a small company's finance team.** React + TypeScript frontend, two Java 21 / Spring Boot services, PostgreSQL, Apache POI for Excel, and a local LLM (Ollama), all running with one `docker compose up`.
 
-![Variance report with drill-down](docs/screenshots/variance-drill-down.png)
+![Variance overview: KPI tiles and net income by month](docs/screenshots/variance-overview.png)
 
 ## Why this exists
 
@@ -22,14 +22,17 @@ All data is for a fictional company, **Ace Janitorial Service** (about 50 employ
 - **Excel export** of every report: live variance and `SUM` formulas, expandable department groups, accounting formats, colour-coded status, forecast months shaded, and a scenario comparison sheet.
 - **Budget entry:** an editable monthly grid per department with live totals, inline validation and all-or-nothing saves.
 - **Actuals import from CSV and Excel:** every row is validated first; a rejected file lists every problem by row, column and value, and nothing is saved. Re-importing a month replaces its amounts instead of duplicating them.
+- **Charts and interface:** hand-built SVG charts (monthly actual vs. budget, cumulative net income with the Best–Worst range) with hover and keyboard tooltips, light and dark themes, a collapsible sidebar for wide tables, and status shown with an icon and a label as well as colour.
 
 ## Screenshots
 
 | | |
 | --- | --- |
-| ![AI commentary](docs/screenshots/ai-commentary.png) **AI commentary** written by `llama3.1:8b`, with its source shown | ![Monthly trend](docs/screenshots/variance-trend.png) **Monthly trend** for one account; months without actuals are marked not closed |
-| ![Forecast scenarios](docs/screenshots/forecast-scenarios.png) **Forecast:** Base/Best/Worst outlooks and the 12-month detail (forecast months shaded) | ![Driver editor](docs/screenshots/forecast-drivers.png) **Drivers** for every scenario, with a live monthly preview |
+| ![Variance drill-down](docs/screenshots/variance-drill-down.png) **Drill-down** from department net contribution to accounts | ![AI commentary](docs/screenshots/ai-commentary.png) **AI commentary** written by `llama3.1:8b`, with its source shown |
+| ![Monthly trend](docs/screenshots/variance-trend.png) **Monthly trend** for one account, with a hover tooltip; months without actuals show budget only | ![Forecast scenarios](docs/screenshots/forecast-scenarios.png) **Forecast:** Base/Best/Worst outlooks and cumulative net income against budget |
+| ![Forecast table](docs/screenshots/forecast-table.png) **12-month forecast** by line (forecast months shaded) | ![Driver editor](docs/screenshots/forecast-drivers.png) **Drivers** for every scenario, with a live monthly preview |
 | ![Budget entry](docs/screenshots/budget-entry.png) **Budget entry:** edited cells in yellow, invalid input in red | ![Import errors](docs/screenshots/import-errors.png) **Actuals import:** a file with mistakes is rejected with every row error listed |
+| ![Dark theme](docs/screenshots/dark-mode.png) **Dark theme** (follows the system setting, or pick one) | |
 
 ## Run it with Docker (one command)
 
@@ -61,13 +64,14 @@ flowchart LR
 - **commentary-service** has no database. It turns the figures it is given into text and never recalculates them.
 - **nginx** serves the React app and forwards `/api` to planning-service, so the browser talks to a single origin.
 
-Details: [docs/architecture.md](docs/architecture.md) (data model, request flows), [docs/api.md](docs/api.md), and [docs/adr/](docs/adr/) (17 decision records).
+Details: [docs/architecture.md](docs/architecture.md) (data model, request flows), [docs/api.md](docs/api.md), and [docs/adr/](docs/adr/) (18 decision records).
 
 ## Tech stack
 
 | Area | Technology | Why |
 | --- | --- | --- |
 | Frontend | React 19 + TypeScript (Vite), React Router | Component-based UI with static types; fast builds and dev server |
+| UI | Plain CSS design tokens, Inter (self-hosted via Fontsource), Lucide icons, hand-built SVG charts | Light/dark theming from one set of variables; no chart library to fight for exact finance formatting |
 | Frontend quality | Vitest + React Testing Library, ESLint + Prettier | Tests components the way a user uses them; consistent, linted code |
 | Backend | Java 21 + Spring Boot 4, Maven | Mature, widely used stack for business services |
 | Database | PostgreSQL 17 + Flyway | Reliable relational database; versioned, repeatable schema migrations |
@@ -129,7 +133,7 @@ npm test
 
 - **planning-service:** unit tests for every calculation (variance sign rules, percentages, zero budgets, forecasts, drivers, scenarios, parsers, Excel output), and Testcontainers integration tests that run the API against a real PostgreSQL (needs Docker running), including checks against independent SQL sums.
 - **commentary-service:** never calls a real language model. It is mocked in unit tests, Ollama's HTTP API is mocked with `MockRestServiceServer`, and integration tests run with the model off or unreachable.
-- **frontend:** Vitest + React Testing Library tests for the money utilities and every page.
+- **frontend:** Vitest + React Testing Library tests for the money utilities, chart scales, forecast series and every page.
 - **Whole stack:** [`scripts/smoke-test.sh`](scripts/smoke-test.sh) checks a running `docker compose` stack through nginx; CI runs it on every push.
 
 ## Project structure

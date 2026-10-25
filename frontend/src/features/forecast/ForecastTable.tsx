@@ -4,8 +4,8 @@ import type {
   ForecastReport,
   OutlookLine,
 } from '../../api/types'
-import { formatPercent, formatSignedMoney } from '../../lib/format'
-import { formatMoney, formatWholeDollars } from '../../lib/money'
+import { formatPercent, formatSignedWholeDollars } from '../../lib/format'
+import { formatWholeDollars } from '../../lib/money'
 import { MONTH_SHORT } from '../../lib/months'
 import { FavorabilityBadge } from '../variance/FavorabilityBadge'
 
@@ -18,10 +18,14 @@ const METHOD_LABELS: Record<ForecastMethod, string> = {
 function OutlookCells({ line }: { line: OutlookLine }) {
   return (
     <>
-      <td className="num">{formatMoney(line.outlook)}</td>
-      <td className="num">{formatMoney(line.budget)}</td>
       <td className="num">
-        {formatSignedMoney(line.variance)}
+        {formatWholeDollars(line.outlook)}
+        <span className="cell-subline">
+          budget {formatWholeDollars(line.budget)}
+        </span>
+      </td>
+      <td className="num">
+        {formatSignedWholeDollars(line.variance)}
         <span className="cell-subline">
           {formatPercent(line.variancePercent)}
         </span>
@@ -34,8 +38,8 @@ function OutlookCells({ line }: { line: OutlookLine }) {
 }
 
 /**
- * Twelve months per line (forecast months shaded, whole dollars to fit the screen), then the full-year outlook
- * against budget with exact cents.
+ * Twelve months per line (forecast months shaded), then the full-year outlook with its budget beneath, and the
+ * variance. Whole dollars keep 16 columns readable; the scenario cards and the Excel export show exact cents.
  */
 export function ForecastTable({ report }: { report: ForecastReport }) {
   return (
@@ -61,9 +65,6 @@ export function ForecastTable({ report }: { report: ForecastReport }) {
             })}
             <th scope="col" className="num">
               Full year
-            </th>
-            <th scope="col" className="num">
-              Budget
             </th>
             <th scope="col" className="num">
               Variance

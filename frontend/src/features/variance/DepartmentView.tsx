@@ -1,6 +1,6 @@
+import { ChevronRight, ChevronsDownUp, ChevronsUpDown } from 'lucide-react'
 import { Fragment, useState } from 'react'
 import type { DepartmentVarianceReport } from '../../api/types'
-import { SummaryCards } from './SummaryCards'
 import { VarianceCells, VarianceHeaderCells } from './VarianceCells'
 
 interface DepartmentViewProps {
@@ -35,19 +35,28 @@ export function DepartmentView({ report, onShowTrend }: DepartmentViewProps) {
   }
 
   return (
-    <>
-      <SummaryCards summary={report.summary} />
+    <section className="card table-card" aria-labelledby="departments-heading">
       <div className="table-heading">
-        <p className="hint">
-          Department rows show <strong>net contribution</strong> (revenue minus
-          expenses), so spending less than budget is favorable. Expand a
-          department to see its accounts.
-        </p>
+        <div>
+          <h3 id="departments-heading" className="card-title">
+            Departments
+          </h3>
+          <p className="card-subtitle">
+            Rows show <strong>net contribution</strong> (revenue minus
+            expenses), so spending less than budget is favorable. Expand a
+            department to see its accounts.
+          </p>
+        </div>
         <button
           type="button"
           onClick={toggleAll}
           disabled={report.departments.length === 0}
         >
+          {allExpanded ? (
+            <ChevronsDownUp size={15} aria-hidden="true" />
+          ) : (
+            <ChevronsUpDown size={15} aria-hidden="true" />
+          )}
           {allExpanded ? 'Collapse all' : 'Expand all'}
         </button>
       </div>
@@ -76,7 +85,7 @@ export function DepartmentView({ report, onShowTrend }: DepartmentViewProps) {
                         aria-label={`${isOpen ? 'Hide' : 'Show'} accounts for ${department.departmentName}`}
                         onClick={() => toggle(department.departmentCode)}
                       >
-                        {isOpen ? '▾' : '▸'}
+                        <ChevronRight size={16} aria-hidden="true" />
                       </button>
                       {department.departmentName}
                     </th>
@@ -120,6 +129,6 @@ export function DepartmentView({ report, onShowTrend }: DepartmentViewProps) {
           </tfoot>
         </table>
       </div>
-    </>
+    </section>
   )
 }

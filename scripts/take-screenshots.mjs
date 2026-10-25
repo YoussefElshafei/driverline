@@ -145,22 +145,45 @@ function page(cdp) {
       const { nodeId } = await cdp.send('DOM.querySelector', { nodeId: root.nodeId, selector })
       await cdp.send('DOM.setFileInputFiles', { nodeId, files: [filePath] })
     },
-    /** Saves a screenshot of the region from the top of `fromSelector` to the bottom of `toSelector`. */
-    async screenshot(fileName, fromSelector = 'body', toSelector = fromSelector, padding = 16) {
+    /**
+     * Saves the region from the top of `fromSelector` to the bottom of `toSelector`, cropped to the main content
+     * column (right of the sidebar).
+     */
+    async screenshot(fileName, fromSelector, toSelector = fromSelector, padding = 16) {
       const box = await evaluate(`(() => {
         const top = document.querySelector(${JSON.stringify(fromSelector)}).getBoundingClientRect()
         const bottom = document.querySelector(${JSON.stringify(toSelector)}).getBoundingClientRect()
-        return { y: top.top + window.scrollY, bottom: bottom.bottom + window.scrollY }
+        const content = document.querySelector('main.content').getBoundingClientRect()
+        return { x: content.left, y: top.top + window.scrollY, bottom: bottom.bottom + window.scrollY }
       })()`)
       const y = Math.max(0, box.y - padding)
-      const { data } = await cdp.send('Page.captureScreenshot', {
-        format: 'png',
-        captureBeyondViewport: true,
-        clip: { x: 0, y, width: WIDTH, height: Math.ceil(box.bottom - y + padding), scale: 1 },
-      })
-      writeFileSync(join(OUTPUT_DIR, fileName), Buffer.from(data, 'base64'))
-      console.log(`saved ${fileName}`)
+      await capture(fileName, { x: box.x, y, width: WIDTH - box.x, height: Math.ceil(box.bottom - y + padding) })
     },
+    /** Saves the whole browser window as the user sees it, sidebar included. */
+    async viewport(fileName) {
+      await evaluate('window.scrollTo(0, 0) || true')
+      // Within the viewport, so no resize is needed (a resize would also end any hover state).
+      await capture(fileName, { x: 0, y: 0, width: WIDTH, height: HEIGHT }, false)
+    },
+    /** Moves the mouse to the centre-left fraction `fx` of an element, to show a chart's hover state. */
+    async hover(selector, fx = 0.5, fy = 0.5) {
+      const point = await evaluate(`(() => {
+        const r = document.querySelector(${JSON.stringify(selector)}).getBoundingClientRect()
+        return { x: r.left + r.width * ${fx}, y: r.top + r.height * ${fy} }
+      })()`)
+      await cdp.send('Input.dispatchMouseEvent', { type: 'mouseMoved', x: point.x, y: point.y })
+      await sleep(250)
+    },
+  }
+
+  async function capture(fileName, clip, captureBeyondViewport = true) {
+    const { data } = await cdp.send('Page.captureScreenshot', {
+      format: 'png',
+      captureBeyondViewport,
+      clip: { ...clip, scale: 1 },
+    })
+    writeFileSync(join(OUTPUT_DIR, fileName), Buffer.from(data, 'base64'))
+    console.log(`saved ${fileName}`)
   }
 }
 
@@ -174,34 +197,51 @@ async function main() {
     await cdp.send('Page.enable')
     await cdp.send('Runtime.enable')
     await cdp.send('Emulation.setDeviceMetricsOverride', { width: WIDTH, height: HEIGHT, deviceScaleFactor: 1, mobile: false })
+    // Reduced motion turns the CSS transitions off, so no screenshot catches a row or chevron mid-animation.
+    await cdp.send('Emulation.setEmulatedMedia', { features: [{ name: 'prefers-reduced-motion', value: 'reduce' }] })
     const app = page(cdp)
 
-    // 1. Variance by department with the Fleet & Equipment drill-down open.
-    await app.goto('/variance', textPresent('Fleet & Equipment'), 'variance report')
+    // Light theme for the main shots, whatever the machine's setting (the toggle stores its choice in localStorage).
+    await app.goto('/variance', 'true', 'app')
+    await app.evaluate(`localStorage.setItem('driverline-theme', 'light') || true`)
+
+    // 1. Variance overview: KPI tiles and the net income chart, as the user first sees it.
+    await app.goto('/variance', textPresent('Fleet & Equipment') + " && !!document.querySelector('.chart svg')", 'variance report')
+    await app.viewport('variance-overview.png')
+
+    // 2. Department table with the Fleet & Equipment drill-down open.
     await app.clickButton('Show accounts for Fleet & Equipment')
     await app.waitFor(textPresent('5300 Vehicle & Fuel'), 'drill-down rows')
-    await app.screenshot('variance-drill-down.png', '.app-header', 'table.report')
+    await app.screenshot('variance-drill-down.png', 'section[aria-labelledby=departments-heading]')
 
-    // 2. AI commentary (written by the local language model when Ollama is running).
+    // 3. AI commentary (written by the local language model when Ollama is running).
     await app.clickButton('Generate commentary')
     await app.waitFor(`!!document.querySelector('.commentary-source')`, 'commentary', 180000)
     await app.screenshot('ai-commentary.png', 'section.commentary')
 
-    // 3. Monthly trend for Vehicle & Fuel (from the drill-down's Trend button).
+    // 4. Monthly trend for Vehicle & Fuel (from the drill-down's Trend button), hovering August.
     await app.clickButton('Monthly trend for 5300 Vehicle & Fuel in Fleet & Equipment')
     await app.waitFor(textPresent('Closed months total'), 'monthly trend')
-    await app.screenshot('variance-trend.png', '#variance-heading', 'table.report')
+    await app.hover('section[aria-labelledby=monthly-heading] .chart svg', 0.63, 0.6)
+    await app.screenshot('variance-trend.png', 'section[aria-labelledby=monthly-heading]', 'section[aria-labelledby=monthly-heading] .chart')
 
-    // 4. Forecast: scenario cards and the 12-month table.
-    await app.goto('/forecast', `!!document.querySelector('.forecast-table') && ${textPresent('Worst')}`, 'forecast')
-    await app.screenshot('forecast-scenarios.png', '#forecast-heading', '.forecast-table')
+    // 5. Forecast: scenario cards and the cumulative outlook chart, hovering November.
+    await app.goto('/forecast', `!!document.querySelector('.forecast-table') && !!document.querySelector('.chart-overlay')`, 'forecast')
+    await app.hover('.chart-overlay', 10.5 / 12, 0.5)
+    await app.viewport('forecast-scenarios.png')
 
-    // 5. Driver editor with an unsaved change, showing the live preview.
+    // 6. The 12-month forecast table (forecast months shaded), with the sidebar collapsed to make room.
+    await app.clickButton('Collapse sidebar')
+    await sleep(300)
+    await app.screenshot('forecast-table.png', 'section[aria-labelledby=scenario-detail-heading]')
+
+    // 7. Driver editor with an unsaved change, showing the live preview.
     await app.setValue('input[aria-label="Contract Cleaning Revenue, Sales & Account Management, Base, Active contracts"]', '64')
     await app.waitFor(textPresent('Save drivers (1)'), 'driver change')
-    await app.screenshot('forecast-drivers.png', 'section.drivers', 'section.drivers .actions')
+    await app.screenshot('forecast-drivers.png', 'section.drivers')
+    await app.clickButton('Expand sidebar')
 
-    // 6. Budget entry for Operations, with one edited (yellow) and one invalid (red) cell.
+    // 8. Budget entry for Operations, with one edited (yellow) and one invalid (red) cell.
     await app.goto('/budgets', textPresent('Budget entry'), 'budget page')
     await app.setValue('label select', '2026')
     await app.evaluate(`(() => {
@@ -213,15 +253,20 @@ async function main() {
     await app.waitFor(`!!document.querySelector('input[aria-label="Cleaning Supplies, Operations, Jan"]')`, 'Operations grid')
     await app.setValue('input[aria-label="Cleaning Supplies, Operations, Jan"]', '24,500')
     await app.setValue('input[aria-label="Cleaning Supplies, Operations, Feb"]', '12.345')
-    await app.screenshot('budget-entry.png', '#budget-heading', '.actions')
+    await app.screenshot('budget-entry.png', '#budget-heading', '.card-footer')
 
-    // 7. Actuals import rejecting a file with mistakes, listing every row error.
+    // 9. Actuals import rejecting a file with mistakes, listing every row error.
     await app.goto('/actuals/import', textPresent('Import actuals'), 'import page')
     await app.uploadFile('input[type=file]', join(REPO_ROOT, 'samples', 'actuals-with-errors.csv'))
     await app.waitFor(`!document.querySelector('button[type=submit]').disabled`, 'file selected')
     await app.clickButton('Import')
     await app.waitFor(`!!document.querySelector('.errors-table')`, 'import errors')
     await app.screenshot('import-errors.png', '#import-heading', '.message-error')
+
+    // 10. Dark theme.
+    await app.evaluate(`localStorage.setItem('driverline-theme', 'dark') || true`)
+    await app.goto('/variance', textPresent('Fleet & Equipment') + " && !!document.querySelector('.chart svg')", 'variance report (dark)')
+    await app.viewport('dark-mode.png')
   } finally {
     cdp.close()
     browser.kill()

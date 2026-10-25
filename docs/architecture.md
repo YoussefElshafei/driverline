@@ -136,13 +136,17 @@ The frontend is organised the same way:
 ```
 frontend/src
 ├── api           Typed fetch client and API types
-├── lib           money.ts: parsing, cents arithmetic, formatting
+├── lib           money.ts: parsing, cents arithmetic, formatting; theme.ts: light/dark theme and sidebar state
+├── components    Page header, loading skeletons
+├── charts        Hand-built SVG charts (monthly actual vs. budget, cumulative outlook), scales, tooltip
 └── features
     ├── variance  Variance page: department (drill-down), account and monthly views, summary cards, AI commentary panel
-    ├── forecast  Forecast page: scenario cards, 12-month table, driver editor
+    ├── forecast  Forecast page: scenario cards, outlook chart data, 12-month table, driver editor
     ├── budgets   Budget entry page, grid, edit-tracking logic
     └── actuals   Import page and error table
 ```
+
+Styling is plain CSS with design tokens (custom properties) for light and dark themes; see [ADR 0018](adr/0018-design-tokens-and-hand-built-svg-charts.md).
 
 ## Demo data
 

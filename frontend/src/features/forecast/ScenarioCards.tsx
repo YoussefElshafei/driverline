@@ -26,6 +26,7 @@ export function ScenarioCards({
           aria-label={`${scenarioName} scenario`}
           onClick={() => onSelect(scenarioCode)}
         >
+          <span className="scenario-radio" aria-hidden="true" />
           <h3>{scenarioName}</h3>
           <p className="summary-actual">
             {formatMoney(summary.netIncome.outlook)}
@@ -34,8 +35,10 @@ export function ScenarioCards({
             Net income outlook · budget {formatMoney(summary.netIncome.budget)}
           </p>
           <p className="summary-variance">
-            {formatSignedMoney(summary.netIncome.variance)} (
-            {formatPercent(summary.netIncome.variancePercent)}){' '}
+            <span>
+              {formatSignedMoney(summary.netIncome.variance)} (
+              {formatPercent(summary.netIncome.variancePercent)})
+            </span>
             <FavorabilityBadge favorability={summary.netIncome.favorability} />
           </p>
           <p className="summary-budget">

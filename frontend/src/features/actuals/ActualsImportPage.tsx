@@ -1,6 +1,8 @@
-import { type FormEvent, useState } from 'react'
+import { CircleCheck, FileSpreadsheet, FileUp, X } from 'lucide-react'
+import { type DragEvent, type FormEvent, useState } from 'react'
 import { ACTUALS_TEMPLATE_URL, ApiError, api } from '../../api/client'
 import type { ImportSummary, RowError } from '../../api/types'
+import { PageHeader } from '../../components/PageHeader'
 import { ImportErrorTable } from './ImportErrorTable'
 
 type Outcome =
@@ -11,6 +13,18 @@ export function ActualsImportPage() {
   const [file, setFile] = useState<File | null>(null)
   const [uploading, setUploading] = useState(false)
   const [outcome, setOutcome] = useState<Outcome | null>(null)
+  const [dragging, setDragging] = useState(false)
+
+  function chooseFile(next: File | null) {
+    setFile(next)
+    setOutcome(null)
+  }
+
+  function handleDrop(event: DragEvent<HTMLLabelElement>) {
+    event.preventDefault()
+    setDragging(false)
+    chooseFile(event.dataTransfer.files[0] ?? null)
+  }
 
   async function handleSubmit(event: FormEvent) {
     event.preventDefault()
@@ -36,37 +50,90 @@ export function ActualsImportPage() {
   }
 
   return (
-    <section aria-labelledby="import-heading">
-      <h2 id="import-heading">Import actuals</h2>
-      <p className="hint">
-        Upload actual revenue and spending exported from your accounting system,
-        as a <strong>.csv</strong> or <strong>.xlsx</strong> file. The first row
-        must contain the columns{' '}
-        <code>year, month, account_code, department_code, amount</code> (in any
-        order). Every row is checked first: if any row has a problem, nothing is
-        imported. Re-importing a month replaces those amounts.{' '}
-        <a href={ACTUALS_TEMPLATE_URL} download>
-          Download a CSV template
-        </a>
-        .
-      </p>
+    <section className="page" aria-labelledby="import-heading">
+      <PageHeader
+        id="import-heading"
+        title="Import actuals"
+        description="Upload actual revenue and spending exported from your accounting system."
+      />
 
-      <form className="toolbar" onSubmit={handleSubmit}>
-        <label>
-          Actuals file
-          <input
-            type="file"
-            accept=".csv,.xlsx"
-            onChange={(event) => {
-              setFile(event.target.files?.[0] ?? null)
-              setOutcome(null)
+      <div className="import-layout">
+        <form className="card card-body import-form" onSubmit={handleSubmit}>
+          <label
+            className={`dropzone${dragging ? ' is-dragging' : ''}`}
+            onDragOver={(event) => {
+              event.preventDefault()
+              setDragging(true)
             }}
-          />
-        </label>
-        <button type="submit" className="primary" disabled={!file || uploading}>
-          {uploading ? 'Importing…' : 'Import'}
-        </button>
-      </form>
+            onDragLeave={() => setDragging(false)}
+            onDrop={handleDrop}
+          >
+            <span className="dropzone-icon" aria-hidden="true">
+              <FileUp size={22} />
+            </span>
+            <span className="dropzone-title">
+              Drop a .csv or .xlsx file here, or click to browse
+            </span>
+            <span className="hint">
+              Up to 5 MB. The first row must be the header.
+            </span>
+            <input
+              className="visually-hidden"
+              type="file"
+              accept=".csv,.xlsx"
+              aria-label="Actuals file"
+              onChange={(event) => chooseFile(event.target.files?.[0] ?? null)}
+            />
+          </label>
+          <div className="actions">
+            {file && (
+              <span className="file-chip">
+                <FileSpreadsheet size={14} aria-hidden="true" />
+                {file.name}
+                <button
+                  type="button"
+                  className="toggle"
+                  aria-label="Remove file"
+                  onClick={() => chooseFile(null)}
+                >
+                  <X size={13} aria-hidden="true" />
+                </button>
+              </span>
+            )}
+            <button
+              type="submit"
+              className="primary"
+              disabled={!file || uploading}
+            >
+              {uploading ? 'Importing…' : 'Import'}
+            </button>
+          </div>
+        </form>
+
+        <aside className="card card-body format-card">
+          <h3 className="card-title">File format</h3>
+          <p className="hint">
+            The first row must contain these columns, in any order:
+          </p>
+          <ul className="format-list">
+            {['year', 'month', 'account_code', 'department_code', 'amount'].map(
+              (column) => (
+                <li key={column}>
+                  <code>{column}</code>
+                </li>
+              ),
+            )}
+          </ul>
+          <p className="hint">
+            <CircleCheck size={14} aria-hidden="true" className="inline-icon" />{' '}
+            Every row is checked first: if any row has a problem, nothing is
+            imported. Re-importing a month replaces those amounts.
+          </p>
+          <a href={ACTUALS_TEMPLATE_URL} download>
+            Download a CSV template
+          </a>
+        </aside>
+      </div>
 
       {outcome?.kind === 'success' && (
         <div role="status" className="message message-success">

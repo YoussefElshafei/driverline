@@ -1,6 +1,8 @@
+import { Bot, RefreshCw, ShieldCheck, Sparkles } from 'lucide-react'
 import { useState } from 'react'
 import { type PeriodQuery, varianceApi } from '../../api/client'
 import type { VarianceCommentary } from '../../api/types'
+import { Skeleton } from '../../components/Skeleton'
 
 type State =
   | { kind: 'idle' }
@@ -33,31 +35,51 @@ export function CommentaryPanel({ query }: { query: PeriodQuery }) {
   }
 
   return (
-    <section aria-labelledby="commentary-heading" className="commentary">
-      <div className="table-heading">
-        <h3 id="commentary-heading">AI commentary</h3>
+    <section
+      aria-labelledby="commentary-heading"
+      className="card card-body commentary"
+    >
+      <div className="commentary-header">
+        <div className="commentary-title">
+          <span className="ai-icon" aria-hidden="true">
+            <Sparkles size={16} />
+          </span>
+          <div>
+            <h3 id="commentary-heading">AI commentary</h3>
+            {state.kind === 'idle' && (
+              <p className="hint">
+                Explains the largest variances for this period in plain English,
+                using a local language model (Ollama) when it is running, or a
+                rule-based summary otherwise.
+              </p>
+            )}
+          </div>
+        </div>
         <button
           type="button"
-          className="primary"
+          className={state.kind === 'done' ? undefined : 'primary'}
           onClick={generate}
           disabled={state.kind === 'loading'}
         >
+          {state.kind === 'done' ? (
+            <RefreshCw size={14} aria-hidden="true" />
+          ) : (
+            <Sparkles size={14} aria-hidden="true" />
+          )}
           {state.kind === 'done' ? 'Regenerate' : 'Generate commentary'}
         </button>
       </div>
 
-      {state.kind === 'idle' && (
-        <p className="hint">
-          Explains the largest variances for this period in plain English, using
-          a local language model (Ollama) when it is running, or a rule-based
-          summary otherwise.
-        </p>
-      )}
       {state.kind === 'loading' && (
-        <p role="status" className="hint">
-          Writing commentary… a local model can take up to a minute the first
-          time it loads.
-        </p>
+        <div className="commentary-loading">
+          <p role="status" className="hint">
+            Writing commentary… a local model can take up to a minute the first
+            time it loads.
+          </p>
+          <Skeleton width="92%" />
+          <Skeleton width="86%" />
+          <Skeleton width="64%" />
+        </div>
       )}
       {state.kind === 'error' && (
         <p role="alert" className="message message-error">
@@ -69,6 +91,11 @@ export function CommentaryPanel({ query }: { query: PeriodQuery }) {
           <p className="commentary-period">{state.commentary.periodLabel}</p>
           <div className="commentary-text">{state.commentary.text}</div>
           <p className="hint commentary-source">
+            {state.commentary.provider === 'rule-based' ? (
+              <Bot size={14} aria-hidden="true" />
+            ) : (
+              <ShieldCheck size={14} aria-hidden="true" />
+            )}
             {sourceText(state.commentary)}
           </p>
         </>
